@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "name": "Sarah Johnson",
+    "avatar": "https://randomuser.me/api/portraits/women/44.jpg",
+    "lastMessage": "Hey, how are you doing?",
+    "time": "2025:04:25 10:30:00",
+    "unread": 2,
+    "status": "Active now",
+    "messages": [
+      { "sender": "them", "text": "Hey there!", "time": "2025:04:25 10:20:00" },
+      {
+        "sender": "me",
+        "text": "Hi Sarah adsfjahsdlfjk/akdjs;l f;asdlkKFajosduilfu;asld fiasdhf uashdfuha sdu buasdbfasdfo!",
+        "time": "2025:04:25 10:22:00"
+      },
+      {
+        "sender": "them",
+        "text": "How are you doing?",
+        "time": "2025:04:25 10:30:00"
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Michael Brown",
+    "avatar": "https://randomuser.me/api/portraits/men/32.jpg",
+    "lastMessage": "Let's meet tomorrow",
+    "time": "2025:04:24 00:00:00",
+    "unread": 0,
+    "status": "Active 2h ago",
+    "messages": [
+      {
+        "sender": "them",
+        "text": "Are you free tomorrow?",
+        "time": "2025:04:24 16:30:00"
+      },
+      {
+        "sender": "me",
+        "text": "Yes, what time?",
+        "time": "2025:04:24 16:35:00"
+      },
+      {
+        "sender": "them",
+        "text": "Let's meet tomorrow",
+        "time": "2025:04:24 16:36:00"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Emily Wilson",
+    "avatar": "https://randomuser.me/api/portraits/women/65.jpg",
+    "lastMessage": "Thanks for your help!",
+    "time": "2025:04:21 00:00:00",
+    "unread": 0,
+    "status": "Active 5h ago",
+    "messages": [
+      {
+        "sender": "me",
+        "text": "I can help you with that project",
+        "time": "2025:04:21 11:20:00"
+      },
+      {
+        "sender": "them",
+        "text": "That would be great!",
+        "time": "2025:04:21 11:25:00"
+      },
+      {
+        "sender": "them",
+        "text": "Thanks for your help!",
+        "time": "2025:04:21 11:30:00"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "David Lee",
+    "avatar": "https://randomuser.me/api/portraits/men/75.jpg",
+    "lastMessage": "The documents are ready",
+    "time": "2025:04:18 00:00:00",
+    "unread": 0,
+    "status": "Active yesterday",
+    "messages": [
+      {
+        "sender": "them",
+        "text": "I'm working on those documents",
+        "time": "2025:04:18 15:15:00"
+      },
+      {
+        "sender": "me",
+        "text": "Great, let me know when they're ready",
+        "time": "2025:04:18 15:20:00"
+      },
+      {
+        "sender": "them",
+        "text": "The documents are ready",
+        "time": "2025:04:18 16:30:00"
+      }
+    ]
+  }
+]
