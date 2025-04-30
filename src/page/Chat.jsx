@@ -1,5 +1,5 @@
-import React, { useRef, useState } from "react";
-import { MdSend } from "react-icons/md";
+import React, { useEffect, useRef, useState } from "react";
+
 import { BiMenu, BiMicrophone } from "react-icons/bi";
 import conversations from "../json/conversation.json";
 
@@ -23,6 +23,7 @@ export default function Chat() {
   const [pendingAttachment, setPendingAttachment] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const [recordingTime, setRecordingTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
@@ -33,6 +34,28 @@ export default function Chat() {
   const fileInputRef = useRef(null);
 
   const currentChat = convos.find((c) => c.id === chat);
+
+  useEffect(() => {
+    let timer;
+
+    if (isRecording) {
+      timer = setInterval(() => {
+        setRecordingTime((prevTime) => prevTime + 1);
+      }, 1000);
+    } else {
+      setRecordingTime(0);
+    }
+
+    return () => clearInterval(timer);
+  }, [isRecording]);
+
+  const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const secs = (seconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${secs}`;
+  };
 
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -57,10 +80,17 @@ export default function Chat() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Stream:", stream);
+
       const recorder = new MediaRecorder(stream);
+      console.log("Recorder:", recorder);
 
       recorder.ondataavailable = (e) => {
-        setAudioChunks((prev) => [...prev, e.data]);
+        setAudioChunks((prev) => {
+          const updatedChunks = [...prev, e.data];
+          console.log("Audio Chunks:", updatedChunks);
+          return updatedChunks;
+        });
       };
 
       recorder.start();
@@ -77,8 +107,11 @@ export default function Chat() {
 
     mediaRecorder.stop();
     mediaRecorder.onstop = () => {
+      console.log("Recording stopped, creating audioBlob...");
       const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
       const audioUrl = URL.createObjectURL(audioBlob);
+
+      console.log("Audio Blob Created:", audioBlob);
 
       const audioFile = {
         name: `audio-${Date.now()}.webm`,
@@ -86,7 +119,6 @@ export default function Chat() {
         url: audioUrl,
       };
 
-      // Send the audio as pendingAttachment
       setPendingAttachment(audioFile);
       sendMessage();
     };
@@ -97,6 +129,7 @@ export default function Chat() {
 
   const cancelRecording = () => {
     if (mediaRecorder) {
+      mediaRecorder.stream.getTracks().forEach((track) => track.stop()); // 🛑 Stop microphone
       mediaRecorder.stop();
       setMediaRecorder(null);
     }
@@ -106,6 +139,7 @@ export default function Chat() {
 
   const sendMessage = () => {
     if (!messageText.trim() && !pendingAttachment) return;
+    console.log("Pending Attachment:", pendingAttachment); // Debugging line
 
     const newMessage = {
       sender: "me",
@@ -136,7 +170,6 @@ export default function Chat() {
     setMessageText("");
     setPendingAttachment(null);
 
-    // Optional: simulate auto-reply after a delay
     setTimeout(() => {
       const reply = replies[Math.floor(Math.random() * replies.length)];
 
@@ -262,12 +295,13 @@ export default function Chat() {
                         Your browser does not support the video tag.
                       </video>
                     )}
-                    {msg.file.type.startsWith("audio/") && (
+                    {msg.file && msg.file.type.startsWith("audio/") && (
                       <audio controls className="w-full mt-2">
                         <source src={msg.file.url} type={msg.file.type} />
                         Your browser does not support the audio element.
                       </audio>
                     )}
+
                     {!msg.file.type.startsWith("image/") &&
                       !msg.file.type.startsWith("video/") && (
                         <a
@@ -341,8 +375,20 @@ export default function Chat() {
               >
                 <FaTrash />
               </button>
+              <div className="flex-1 flex flex-col items-center justify-center">
+                {/* Timer */}
+                <div className="text-red-500 font-semibold text-sm md:text-lg">
+                  {formatTime(recordingTime)}
+                </div>
+                {/* Moving Dots Animation */}
+                <div className="flex items-center gap-1 mt-1">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.2s]"></div>
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.4s]"></div>
+                </div>
+              </div>
               <button
-                onClick={sendMessage}
+                onClick={stopRecordingAndSend}
                 className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
               >
                 Send
