@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   format,
   isYesterday,
@@ -9,6 +9,7 @@ import {
   differenceInMonths,
   differenceInYears,
 } from "date-fns";
+import { FiSearch } from "react-icons/fi";
 
 const formatTime = (raw) => {
   const date = new Date(
@@ -35,16 +36,26 @@ const formatTime = (raw) => {
 };
 
 const Sidebar = ({ conversations, setChat, chat }) => {
+  const [search, setSearch] = useState("");
+
+  const filteredConversations = conversations.filter((c) =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <div>
-      <div className="p-4 border-b h-[65px]">
+      <div className="p-4 border-b h-[65px] relative flex items-center ">
         <input
           type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
           placeholder="Search Messenger"
           className="w-full bg-gray-100 rounded-full py-2 px-4 pl-10 focus:outline-none"
         />
+        <FiSearch className="absolute left-8 text-gray-400" />
       </div>
-      {conversations.map((c) => (
+
+      {filteredConversations.map((c) => (
         <div
           key={c.id}
           onClick={() => setChat(c.id)}
@@ -65,8 +76,13 @@ const Sidebar = ({ conversations, setChat, chat }) => {
             )}
           </div>
           <div className="flex-1 gap-2">
-            <p className="font-semibold text-sm md:text-base">{c.name}</p>
-            <p className="text-[10px] md:text-sm text-gray-500 overflow-hidden whitespace-nowrap truncate">
+            <p className="font-semibold text-sm md:text-base max-w-[140px] truncate">
+              {c.name}
+            </p>
+            <p
+              className="text-[10px] md:text-sm text-gray-500 max-w-[120px] break-words"
+              title={c.lastMessage}
+            >
               {c.lastMessage}
             </p>
           </div>

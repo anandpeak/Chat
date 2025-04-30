@@ -3,8 +3,93 @@ import React, { useEffect, useRef, useState } from "react";
 import { BiMenu, BiMicrophone } from "react-icons/bi";
 import conversations from "../json/conversation.json";
 
-import { FaTrash } from "react-icons/fa";
+import { FaPause, FaPlay, FaTrash } from "react-icons/fa";
 import Sidebar from "../partials/Sidebar";
+
+const VoiceMessage = ({ file }) => {
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState("0:00");
+  const [displayDuration, setDisplayDuration] = useState("0:00");
+
+  const formatDuration = (seconds) => {
+    if (!seconds || !isFinite(seconds)) return "0:00";
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  useEffect(() => {
+    if (file?.duration) {
+      setDisplayDuration(formatDuration(file.duration));
+    }
+  }, [file]);
+
+  const togglePlay = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.pause();
+    } else {
+      audio.play();
+    }
+    setIsPlaying(!isPlaying);
+  };
+
+  const handleLoadedMetadata = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isFinite(audio.duration) && audio.duration > 0) {
+      setDuration(formatDuration(audio.duration));
+      setDisplayDuration(formatDuration(audio.duration));
+    } else if (file?.duration) {
+      setDisplayDuration(formatDuration(file.duration));
+    }
+  };
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateTime = () => {
+      if (isFinite(audio.currentTime)) {
+        setDuration(formatDuration(audio.currentTime));
+      }
+    };
+
+    if (isPlaying) {
+      audio.addEventListener("timeupdate", updateTime);
+      return () => audio.removeEventListener("timeupdate", updateTime);
+    }
+  }, [isPlaying]);
+
+  return (
+    <div className=" text-white flex items-center justify-between space-x-3 max-w-xs">
+      <button
+        onClick={togglePlay}
+        className="p-2 bg-blue-500 text-white rounded-full"
+      >
+        {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} />}
+      </button>
+      <span className="text-sm no-underline">
+        {isPlaying ? duration : displayDuration}
+      </span>
+
+      <audio
+        ref={audioRef}
+        src={file?.url}
+        onLoadedMetadata={handleLoadedMetadata}
+        onEnded={() => {
+          setIsPlaying(false);
+          setDuration(displayDuration);
+        }}
+        style={{ display: "none" }}
+      />
+    </div>
+  );
+};
 
 const replies = [
   "That's interesting!",
@@ -25,10 +110,11 @@ export default function Chat() {
 
   const [recordingTime, setRecordingTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
-  const [mediaRecorder, setMediaRecorder] = useState(null);
   const [audioChunks, setAudioChunks] = useState([]);
+  const mediaRecorderRef = useRef(null);
 
   const [convos, setConvos] = useState(conversations);
+  const chatContainerRef = useRef(null);
 
   const maxFileSize = 25 * 1024 * 1024;
   const fileInputRef = useRef(null);
@@ -80,58 +166,100 @@ export default function Chat() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("Stream:", stream);
-
       const recorder = new MediaRecorder(stream);
-      console.log("Recorder:", recorder);
+      const chunks = [];
 
       recorder.ondataavailable = (e) => {
-        setAudioChunks((prev) => {
-          const updatedChunks = [...prev, e.data];
-          console.log("Audio Chunks:", updatedChunks);
-          return updatedChunks;
-        });
+        chunks.push(e.data);
       };
 
+      mediaRecorderRef.current = recorder;
+      setAudioChunks(chunks);
       recorder.start();
-      setMediaRecorder(recorder);
-      setAudioChunks([]);
       setIsRecording(true);
-    } catch (error) {
-      console.error("Recording error:", error);
+    } catch (err) {
+      console.error("Failed to start recording:", err);
     }
   };
 
-  const stopRecordingAndSend = () => {
-    if (!mediaRecorder) return;
+  const stopRecordingAndSend = async () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
 
-    mediaRecorder.stop();
-    mediaRecorder.onstop = () => {
-      console.log("Recording stopped, creating audioBlob...");
-      const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-      const audioUrl = URL.createObjectURL(audioBlob);
-
-      console.log("Audio Blob Created:", audioBlob);
-
-      const audioFile = {
-        name: `audio-${Date.now()}.webm`,
-        type: "audio/webm",
-        url: audioUrl,
-      };
-
-      setPendingAttachment(audioFile);
-      sendMessage();
-    };
+    await new Promise((resolve) => {
+      recorder.onstop = resolve;
+      recorder.stop();
+    });
 
     setIsRecording(false);
-    setMediaRecorder(null);
+
+    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    const audio = new Audio(audioUrl);
+
+    const durationFromMetadata = await new Promise((resolve) => {
+      audio.onloadedmetadata = () => {
+        if (isFinite(audio.duration) && audio.duration > 0) {
+          resolve(audio.duration);
+        } else {
+          resolve(null);
+        }
+      };
+      audio.onerror = () => resolve(null);
+    });
+
+    let duration = durationFromMetadata;
+    if (!durationFromMetadata) {
+      duration = await getAudioDurationFromBlob(audioBlob);
+    }
+
+    if (!duration || !isFinite(duration)) {
+      console.warn("Could not determine duration accurately, using fallback");
+      duration = calculateDurationFallback(audioChunks);
+    }
+
+    console.log("Final Duration:", duration);
+
+    const audioFile = {
+      name: `audio-${Date.now()}.webm`,
+      type: "audio/webm",
+      url: audioUrl,
+      duration: duration,
+    };
+
+    setPendingAttachment(audioFile);
+    sendMessage();
+    mediaRecorderRef.current = null;
   };
 
+  async function getAudioDurationFromBlob(blob) {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+
+    try {
+      const decodedData = await audioContext.decodeAudioData(arrayBuffer);
+      return decodedData.duration;
+    } catch (error) {
+      console.error("Error decoding audio:", error);
+      return null;
+    }
+  }
+
+  function calculateDurationFallback(chunks) {
+    const totalBytes = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+    const approximateBitrate = 4000;
+    return totalBytes / approximateBitrate;
+  }
+
   const cancelRecording = () => {
-    if (mediaRecorder) {
-      mediaRecorder.stream.getTracks().forEach((track) => track.stop()); // 🛑 Stop microphone
-      mediaRecorder.stop();
-      setMediaRecorder(null);
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stream
+        .getTracks()
+        .forEach((track) => track.stop());
+      mediaRecorderRef.current.stop();
+      mediaRecorderRef.current = null;
     }
     setAudioChunks([]);
     setIsRecording(false);
@@ -139,7 +267,6 @@ export default function Chat() {
 
   const sendMessage = () => {
     if (!messageText.trim() && !pendingAttachment) return;
-    console.log("Pending Attachment:", pendingAttachment); // Debugging line
 
     const newMessage = {
       sender: "me",
@@ -194,6 +321,13 @@ export default function Chat() {
     }, 1500);
   };
 
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [currentChat?.messages]);
+
   return (
     <div className="flex h-screen font-sans">
       {/* Sidebar */}
@@ -208,7 +342,6 @@ export default function Chat() {
         <Sidebar setChat={setChat} chat={chat} conversations={conversations} />
       </div>
 
-      {/* Overlay when sidebar open on mobile */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
@@ -249,7 +382,10 @@ export default function Chat() {
         )}
 
         {/* Messages */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-2 bg-gray-50">
+        <div
+          className="flex-1 p-4 overflow-y-auto space-y-4 md:space-y-2 bg-gray-50"
+          ref={chatContainerRef}
+        >
           {currentChat?.messages.map((msg, idx) => (
             <div
               key={idx}
@@ -296,10 +432,7 @@ export default function Chat() {
                       </video>
                     )}
                     {msg.file && msg.file.type.startsWith("audio/") && (
-                      <audio controls className="w-full mt-2">
-                        <source src={msg.file.url} type={msg.file.type} />
-                        Your browser does not support the audio element.
-                      </audio>
+                      <VoiceMessage file={msg.file} />
                     )}
 
                     {!msg.file.type.startsWith("image/") &&
