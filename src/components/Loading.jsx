@@ -2,8 +2,7 @@ import React from "react";
 
 const Loading = () => {
   return (
-    <div>
-      {" "}
+    <div className="md:mt-20 mt-10 md:mr-0 mr-32">
       <div className="m-auto w-10/12 pt-20">
         <div className="min-h-full flex items-center justify-center">
           <div>

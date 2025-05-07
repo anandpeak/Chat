@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 
 import { BiSolidUser } from "react-icons/bi";
-
+import Cookies from "js-cookie";
 import { FaPause, FaPlay, FaTrash } from "react-icons/fa";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -113,7 +113,7 @@ export default function Chat() {
   const fileInputRef = useRef(null);
   useEffect(() => {
     setLoading(true);
-    const token = localStorage.getItem("chatToken");
+    const token = Cookies.get("chatToken");
     axios
       .get(
         `https://aichatbot-326159028339.us-central1.run.app/chat/init/${cId}/${jId}`,
@@ -312,7 +312,8 @@ export default function Chat() {
       return { ...prev, textReponse: updatedTextResponse };
     });
 
-    const token = localStorage.getItem("chatToken");
+    const token = Cookies.get("chatToken");
+
     setLoadingChat(true);
     try {
       const response = await axios.post(
@@ -402,7 +403,7 @@ export default function Chat() {
             ))}
           </>
         ) : (
-          history.textReponse
+          history?.textReponse
             ?.filter((msg) => msg.chatbot || msg.user)
             .map((msg, idx) => {
               const sender = msg.chatbot ? "them" : "me";
@@ -515,7 +516,7 @@ export default function Chat() {
         )}
       </div>
 
-      <div className="p-4 border-t bg-none flex-shrink-0">
+      <div className={`p-4 border-t bg-none flex-shrink-0`}>
         {pendingAttachment && (
           <div className="mb-2 flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white">
             {pendingAttachment.type.startsWith("image/") && (
@@ -575,7 +576,7 @@ export default function Chat() {
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2`}>
             <>
               {/* <input
                 type="file"

@@ -4,6 +4,7 @@ import { Header } from "../partials/Header";
 import axios from "axios";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import Loading from "../components/Loading";
+import Cookies from "js-cookie";
 
 export const Layout = ({ children }) => {
   const { cId, jId } = useParams();
@@ -24,7 +25,7 @@ export const Layout = ({ children }) => {
   );
 
   useEffect(() => {
-    const token = localStorage.getItem("chatToken");
+    const token = Cookies.get("chatToken");
 
     axios
       .get(`https://aichatbot-326159028339.us-central1.run.app/chat/list`, {
@@ -96,7 +97,13 @@ export const Layout = ({ children }) => {
           activeConversation={activeConversation}
           setIsSidebarOpen={setIsSidebarOpen}
         />
-        <div className="w-full h-[90%] md:h-[92%]">{children}</div>
+        <div
+          className={`w-full ${
+            conversations.length === 0 ? "h-screen" : "h-[90%] md:h-[92%]"
+          }`}
+        >
+          {children}
+        </div>
       </div>
     </div>
   );

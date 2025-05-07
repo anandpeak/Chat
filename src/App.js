@@ -9,13 +9,13 @@ import SignUp from "./partials/SignUp";
 import Chat from "./page/Chat";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { Layout } from "./components/Layout";
+import NotFound from "./components/NotFound";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<SignUp />} />
-
         {/* Redirect from "/chat" to "/chat/{cId}/{jId}" */}
         <Route
           path="/chat"
@@ -27,7 +27,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         {/* Main chat route with cId and jId */}
         <Route
           path="/chat/:cId/:jId"
@@ -39,9 +38,9 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         {/* Catch-all route for unmatched paths */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<NotFound />} />{" "}
+        {/* 404 Page for unmatched routes */}
       </Routes>
     </Router>
   );

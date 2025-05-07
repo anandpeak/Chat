@@ -3,6 +3,7 @@ import { FaPhoneAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
+import Cookies from "js-cookie";
 
 export default function PhoneLogin() {
   const [step, setStep] = useState(1);
@@ -62,9 +63,12 @@ export default function PhoneLogin() {
         console.log(response.data.token);
         console.log(response);
         const token = response.data.token;
-        localStorage.removeItem("chatToken");
+
+        Cookies.remove("chatToken");
+
         console.log("token", token);
-        localStorage.setItem("chatToken", token);
+
+        Cookies.set("chatToken", token, { expires: 7 });
 
         const redirectPath = localStorage.getItem("redirectPath") || "/chat";
         localStorage.removeItem("redirectPath");
