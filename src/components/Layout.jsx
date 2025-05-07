@@ -82,6 +82,8 @@ export const Layout = ({ children }) => {
           isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
           changeConversation={changeConversation}
+          cId={cId}
+          jId={jId}
         />
       </div>
 

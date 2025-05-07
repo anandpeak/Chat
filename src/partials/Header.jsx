@@ -33,10 +33,10 @@ export const Header = ({ activeConversation, setIsSidebarOpen }) => {
           {/* <p className="text-sm">{activeConversation.status}</p> */}
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1">
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="text-2xl mr-4 md:hidden"
+          className="text-2xl mr-3 md:hidden"
         >
           <BiMenu />
         </button>

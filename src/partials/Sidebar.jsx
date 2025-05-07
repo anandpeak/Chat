@@ -39,7 +39,7 @@ const formatTime = (raw) => {
   return `${years} year${years === 1 ? "" : "s"} ago`;
 };
 
-export const Sidebar = ({ conversations, changeConversation }) => {
+export const Sidebar = ({ conversations, changeConversation, cId, jId }) => {
   const [search, setSearch] = useState("");
   const [selectedConversation, setSelectedConversation] = useState(null);
 
@@ -77,7 +77,11 @@ export const Sidebar = ({ conversations, changeConversation }) => {
             key={index}
             onClick={() => handleConversationClick(c)}
             className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 border-b gap-2 ${
-              selectedConversation?.jobId === c.jobId ? "bg-gray-200" : ""
+              cId === c.companyId && jId === c.jobId
+                ? "bg-gray-200"
+                : selectedConversation?.jobId === c.jobId
+                ? "bg-gray-200"
+                : ""
             }`}
           >
             {c.companyPhoto ? (
