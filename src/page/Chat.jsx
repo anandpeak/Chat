@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { BiMenu, BiMicrophone } from "react-icons/bi";
-import conversations from "../json/conversation.json";
+import { BiSolidUser } from "react-icons/bi";
 
 import { FaPause, FaPlay, FaTrash } from "react-icons/fa";
-import Sidebar from "../partials/Sidebar";
+import { useParams } from "react-router-dom";
+import axios from "axios";
+import Skeleton from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 
 const VoiceMessage = ({ file }) => {
   const audioRef = useRef(null);
@@ -91,35 +93,45 @@ const VoiceMessage = ({ file }) => {
   );
 };
 
-const replies = [
-  "That's interesting!",
-  "Tell me more.",
-  "Haha, good one!",
-  "Let me think about it.",
-  "Absolutely!",
-  "I'm not sure about that.",
-  "Cool!",
-  "Sounds good.",
-];
-
 export default function Chat() {
-  const [chat, setChat] = useState(1);
+  const { cId, jId } = useParams();
   const [messageText, setMessageText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [history, setHistory] = useState(null);
 
   const [recordingTime, setRecordingTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const [audioChunks, setAudioChunks] = useState([]);
   const mediaRecorderRef = useRef(null);
 
-  const [convos, setConvos] = useState(conversations);
   const chatContainerRef = useRef(null);
+
+  const [loading, setLoading] = useState(true);
+  const [loadingChat, setLoadingChat] = useState(false);
 
   const maxFileSize = 25 * 1024 * 1024;
   const fileInputRef = useRef(null);
-
-  const currentChat = convos.find((c) => c.id === chat);
+  useEffect(() => {
+    setLoading(true);
+    const token = localStorage.getItem("chatToken");
+    axios
+      .get(
+        `https://aichatbot-326159028339.us-central1.run.app/chat/init/${cId}/${jId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+      .then((data) => {
+        setHistory(data.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.log(err);
+        setLoading(false);
+      });
+  }, [cId, jId]);
 
   useEffect(() => {
     let timer;
@@ -265,311 +277,345 @@ export default function Chat() {
     setIsRecording(false);
   };
 
-  const sendMessage = () => {
-    if (!messageText.trim() && !pendingAttachment) return;
+  const sendMessage = async () => {
+    const text = messageText.trim();
+
+    setMessageText("");
+
+    if (!text && !pendingAttachment) return;
 
     const newMessage = {
       sender: "me",
       time: new Date().toISOString(),
+      text: null,
+      file: null,
     };
 
-    if (messageText.trim()) {
-      newMessage.text = messageText.trim();
+    if (text) {
+      newMessage.text = {
+        text,
+        companyId: cId,
+        jobId: jId,
+      };
     }
 
     if (pendingAttachment) {
       newMessage.file = pendingAttachment;
     }
 
-    setConvos((prev) =>
-      prev.map((c) =>
-        c.id === chat
-          ? {
-              ...c,
-              messages: [...c.messages, newMessage],
-              lastMessage: messageText || pendingAttachment?.name,
-              time: new Date().toISOString(),
-            }
-          : c
-      )
-    );
+    setHistory((prev) => {
+      const updatedTextResponse = [
+        ...prev.textReponse,
+        { user: text, chatbot: null },
+      ];
 
-    setMessageText("");
-    setPendingAttachment(null);
+      return { ...prev, textReponse: updatedTextResponse };
+    });
 
-    setTimeout(() => {
-      const reply = replies[Math.floor(Math.random() * replies.length)];
-
-      const replyMessage = {
-        text: reply,
-        sender: "them",
-        time: new Date().toISOString(),
-      };
-
-      setConvos((prev) =>
-        prev.map((c) =>
-          c.id === chat
-            ? {
-                ...c,
-                messages: [...c.messages, replyMessage],
-                lastMessage: reply,
-                time: new Date().toISOString(),
-              }
-            : c
-        )
+    const token = localStorage.getItem("chatToken");
+    setLoadingChat(true);
+    try {
+      const response = await axios.post(
+        "https://aichatbot-326159028339.us-central1.run.app/chat/conversation",
+        newMessage.text,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
-    }, 1500);
+
+      const data = response.data;
+
+      setHistory((prev) => {
+        const updatedTextResponse = [
+          ...prev.textReponse,
+          { user: null, chatbot: data.textReponse },
+        ];
+
+        return { ...prev, textReponse: updatedTextResponse };
+      });
+
+      setLoadingChat(false);
+    } catch (error) {
+      console.error("Error sending message: ", error);
+      setLoadingChat(false);
+    }
+
+    setPendingAttachment(null);
   };
 
   useEffect(() => {
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+      const isMobile = window.innerWidth <= 768;
+
+      if (isMobile) {
+        // Scroll to the most recent user message
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
+      } else {
+        // Scroll to the most recent user message
+        chatContainerRef.current.scrollTop =
+          chatContainerRef.current.scrollHeight;
+      }
     }
-  }, [currentChat?.messages]);
+  }, [history?.textReponse]);
 
   return (
-    <div className="flex h-screen font-sans">
-      {/* Sidebar */}
+    <div className="w-full flex flex-col h-full bg-gray-50">
       <div
-        className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r overflow-y-auto transform 
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-          transition-transform duration-300 ease-in-out
-          md:relative md:translate-x-0 md:w-1/4
-        `}
+        className="flex-1 overflow-y-scroll p-4 space-y-4 md:space-y-2"
+        ref={chatContainerRef}
       >
-        <Sidebar setChat={setChat} chat={chat} conversations={conversations} />
-      </div>
+        {loading ? (
+          <>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div
+                key={index}
+                className={`flex items-end gap-3 ${
+                  index % 2 === 0 ? "justify-start" : "justify-end"
+                }`}
+              >
+                {index % 2 === 0 && (
+                  <div className="w-8 h-8">
+                    <Skeleton circle width={32} height={32} />
+                  </div>
+                )}
 
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        ></div>
-      )}
+                <div
+                  className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl ${
+                    index % 2 === 0 ? "bg-white" : "bg-blue-500 text-white"
+                  }`}
+                >
+                  <Skeleton width="80%" height={16} />
+                  <Skeleton width="60%" height={16} />
+                  <Skeleton width="40%" height={16} />
+                </div>
 
-      {/* Chat window */}
-      <div className="flex flex-col w-full">
-        {/* Header */}
-        {currentChat && (
-          <div className="flex items-center justify-between p-4 border-b h-[65px]">
-            <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full mr-3 relative">
-                <img
-                  src={currentChat.avatar}
-                  alt={currentChat.name}
-                  className="w-full h-full object-contain rounded-full"
-                />
-                {currentChat.status === "Active now" && (
-                  <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
-                    <div className="bg-green-400 w-2 h-2 rounded-full"></div>
+                {index % 2 !== 0 && (
+                  <div className="w-8 h-8">
+                    <Skeleton circle width={32} height={32} />
                   </div>
                 )}
               </div>
-              <div>
-                <p className="font-semibold">{currentChat.name}</p>
-                <p className="text-sm">{currentChat.status}</p>
-              </div>
+            ))}
+          </>
+        ) : (
+          history.textReponse
+            ?.filter((msg) => msg.chatbot || msg.user)
+            .map((msg, idx) => {
+              const sender = msg.chatbot ? "them" : "me";
+
+              return (
+                <div
+                  key={idx}
+                  className={`flex items-end gap-3 ${
+                    sender === "me" ? "justify-end" : "justify-start"
+                  } group`}
+                >
+                  {sender === "them" && (
+                    <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
+                      {history.avatar ? (
+                        <img
+                          src={history.avatar}
+                          alt={history.name}
+                          className="w-full h-full object-contain rounded-full"
+                        />
+                      ) : (
+                        <BiSolidUser className="m-0 cursor-pointer w-[25px] h-[25px] text-[#666874]" />
+                      )}
+                      {history.status === "Active now" && (
+                        <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
+                          <div className="bg-green-400 w-2 h-2 rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div
+                    className={`relative max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl shadow text-sm transition-colors duration-300 flex flex-col ${
+                      sender === "me"
+                        ? "bg-blue-500 text-white"
+                        : "bg-white text-black"
+                    }`}
+                  >
+                    {msg.chatbot && <p>{msg.chatbot}</p>}
+                    {msg.user && <p>{msg.user}</p>}
+
+                    {msg.file && (
+                      <div className="mt-1">
+                        {msg.file.type.startsWith("image/") && (
+                          <img
+                            src={msg.file.url}
+                            alt="uploaded"
+                            className="max-w-xs rounded-lg"
+                          />
+                        )}
+                        {msg.file.type.startsWith("video/") && (
+                          <video controls className="max-w-xs rounded-lg">
+                            <source src={msg.file.url} type={msg.file.type} />
+                            Your browser does not support the video tag.
+                          </video>
+                        )}
+                        {msg.file.type.startsWith("audio/") && (
+                          <VoiceMessage file={msg.file} />
+                        )}
+
+                        {!msg.file.type.startsWith("image/") &&
+                          !msg.file.type.startsWith("video/") && (
+                            <a
+                              href={msg.file.url}
+                              download={msg.file.name}
+                              className="underline"
+                            >
+                              {msg.file.name}
+                            </a>
+                          )}
+                      </div>
+                    )}
+                  </div>
+
+                  {sender === "me" && (
+                    <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
+                      {history.avatar ? (
+                        <img
+                          src={history.avatar}
+                          alt={history.name}
+                          className="w-full h-full object-contain rounded-full"
+                        />
+                      ) : (
+                        <BiSolidUser className="m-0 cursor-pointer w-[25px] h-[25px] text-[#666874]" />
+                      )}
+                      {history.status === "Active now" && (
+                        <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
+                          <div className="bg-green-400 w-2 h-2 rounded-full"></div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+        )}
+        {loadingChat && (
+          <div className={`flex items-end gap-3 justify-start pt-4`}>
+            <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
+              <BiSolidUser className="m-0 cursor-pointer w-[25px] h-[25px] text-[#666874]" />
             </div>
-            <button
-              onClick={() => setIsSidebarOpen(true)}
-              className="text-2xl mr-4 md:hidden"
+
+            <div
+              className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl bg-white`}
             >
-              <BiMenu />
+              <Skeleton width="80%" height={16} />
+              <Skeleton width="60%" height={16} />
+              <Skeleton width="40%" height={16} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="p-4 border-t bg-none flex-shrink-0">
+        {pendingAttachment && (
+          <div className="mb-2 flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white">
+            {pendingAttachment.type.startsWith("image/") && (
+              <img
+                src={pendingAttachment.url}
+                alt="preview"
+                className="w-16 h-16 object-cover rounded"
+              />
+            )}
+            {pendingAttachment.type.startsWith("video/") && (
+              <video className="w-16 h-16 rounded" controls>
+                <source
+                  src={pendingAttachment.url}
+                  type={pendingAttachment.type}
+                />
+              </video>
+            )}
+            {!pendingAttachment.type.startsWith("image/") &&
+              !pendingAttachment.type.startsWith("video/") && (
+                <p className="text-sm">{pendingAttachment.name}</p>
+              )}
+            <button
+              onClick={() => setPendingAttachment(null)}
+              className="text-red-500 text-sm hover:underline"
+            >
+              ❌
             </button>
           </div>
         )}
 
-        {/* Messages */}
-        <div
-          className="flex-1 p-4 overflow-y-auto space-y-4 md:space-y-2 bg-gray-50"
-          ref={chatContainerRef}
-        >
-          {currentChat?.messages.map((msg, idx) => (
-            <div
-              key={idx}
-              className={`flex items-end gap-3 ${
-                msg.sender === "me" ? "justify-end" : "justify-start"
-              } group`}
+        {isRecording ? (
+          <div className="flex items-center justify-between w-full">
+            <button
+              onClick={cancelRecording}
+              className="text-red-400 text-base md:text-2xl p-2"
+              title="Cancel Recording"
             >
-              {msg.sender === "them" && (
-                <div className="w-8 h-8 rounded-full relative">
-                  <img
-                    src={currentChat.avatar}
-                    alt={currentChat.name}
-                    className="w-full h-full object-contain rounded-full"
-                  />
-                  {currentChat.status === "Active now" && (
-                    <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
-                      <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div
-                className={`relative max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl shadow text-sm transition-colors duration-300 flex flex-col ${
-                  msg.sender === "me"
-                    ? "bg-blue-500 text-white"
-                    : "bg-white text-black"
-                }`}
-              >
-                {msg.text && <p>{msg.text}</p>}
-                {msg.file && (
-                  <div className="mt-1">
-                    {msg.file.type.startsWith("image/") && (
-                      <img
-                        src={msg.file.url}
-                        alt="uploaded"
-                        className="max-w-xs rounded-lg"
-                      />
-                    )}
-                    {msg.file.type.startsWith("video/") && (
-                      <video controls className="max-w-xs rounded-lg">
-                        <source src={msg.file.url} type={msg.file.type} />
-                        Your browser does not support the video tag.
-                      </video>
-                    )}
-                    {msg.file && msg.file.type.startsWith("audio/") && (
-                      <VoiceMessage file={msg.file} />
-                    )}
-
-                    {!msg.file.type.startsWith("image/") &&
-                      !msg.file.type.startsWith("video/") && (
-                        <a
-                          href={msg.file.url}
-                          download={msg.file.name}
-                          className="underline"
-                        >
-                          {msg.file.name}
-                        </a>
-                      )}
-                  </div>
-                )}
+              <FaTrash />
+            </button>
+            <div className="flex-1 flex flex-col items-center justify-center">
+              {/* Timer */}
+              <div className="text-red-500 font-semibold text-sm md:text-lg">
+                {formatTime(recordingTime)}
               </div>
-
-              {msg.sender === "me" && (
-                <div className="w-8 h-8 rounded-full relative">
-                  <img
-                    src={currentChat.avatar}
-                    alt={currentChat.name}
-                    className="w-full h-full object-contain rounded-full"
-                  />
-                  {currentChat.status === "Active now" && (
-                    <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
-                      <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Input */}
-        <div className="p-4 border-t">
-          {pendingAttachment && (
-            <div className="mb-2 flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white">
-              {pendingAttachment.type.startsWith("image/") && (
-                <img
-                  src={pendingAttachment.url}
-                  alt="preview"
-                  className="w-16 h-16 object-cover rounded"
-                />
-              )}
-              {pendingAttachment.type.startsWith("video/") && (
-                <video className="w-16 h-16 rounded" controls>
-                  <source
-                    src={pendingAttachment.url}
-                    type={pendingAttachment.type}
-                  />
-                </video>
-              )}
-              {!pendingAttachment.type.startsWith("image/") &&
-                !pendingAttachment.type.startsWith("video/") && (
-                  <p className="text-sm">{pendingAttachment.name}</p>
-                )}
-              <button
-                onClick={() => setPendingAttachment(null)}
-                className="text-red-500 text-sm hover:underline"
-              >
-                ❌
-              </button>
-            </div>
-          )}
-
-          {isRecording ? (
-            <div className="flex items-center justify-between w-full">
-              <button
-                onClick={cancelRecording}
-                className="text-red-400 text-base md:text-2xl p-2"
-                title="Cancel Recording"
-              >
-                <FaTrash />
-              </button>
-              <div className="flex-1 flex flex-col items-center justify-center">
-                {/* Timer */}
-                <div className="text-red-500 font-semibold text-sm md:text-lg">
-                  {formatTime(recordingTime)}
-                </div>
-                {/* Moving Dots Animation */}
-                <div className="flex items-center gap-1 mt-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.2s]"></div>
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.4s]"></div>
-                </div>
+              {/* Moving Dots Animation */}
+              <div className="flex items-center gap-1 mt-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce"></div>
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.2s]"></div>
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-bounce [animation-delay:.4s]"></div>
               </div>
-              <button
-                onClick={stopRecordingAndSend}
-                className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
-              >
-                Send
-              </button>
             </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <>
-                <input
-                  type="file"
-                  accept="image/*,video/*,application/pdf,application/msword,.doc,.docx,.xls,.xlsx"
-                  ref={fileInputRef}
-                  onChange={handleFileUpload}
-                  className="hidden"
-                />
-                <button
-                  onClick={() => fileInputRef.current.click()}
-                  className="text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center p-3"
-                >
-                  📎
-                </button>
-              </>
-
-              <input
-                type="text"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-2 rounded-full border focus:outline-none bg-gray-100 md:text-base text-sm"
+            <button
+              onClick={stopRecordingAndSend}
+              className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
+            >
+              Send
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <>
+              {/* <input
+                type="file"
+                accept="image/*,video/*,application/pdf,application/msword,.doc,.docx,.xls,.xlsx"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
               />
               <button
-                className={`text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center `}
-                title={"Hold to Record"}
-                onClick={startRecording}
+                onClick={() => fileInputRef.current.click()}
+                className="text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center p-3"
               >
-                <BiMicrophone />
-              </button>
+                📎
+              </button> */}
+            </>
 
-              <button
-                onClick={sendMessage}
-                className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
-              >
-                Send
-              </button>
-            </div>
-          )}
-        </div>
+            <input
+              type="text"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder="Type a message..."
+              className="flex-1 px-4 py-2 rounded-full border focus:outline-none bg-gray-100 md:text-base text-sm"
+            />
+            {/* <button
+              className={`text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center `}
+              title={"Hold to Record"}
+              onClick={startRecording}
+            >
+              <BiMicrophone />
+            </button> */}
+
+            <button
+              onClick={sendMessage}
+              className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
+            >
+              Send
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

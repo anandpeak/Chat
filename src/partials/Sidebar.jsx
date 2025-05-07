@@ -1,23 +1,27 @@
-import React, { useState } from "react";
-import {
-  format,
-  isYesterday,
-  isThisWeek,
-  differenceInMinutes,
-  differenceInHours,
-  differenceInWeeks,
-  differenceInMonths,
-  differenceInYears,
-} from "date-fns";
+import { useState } from "react";
 import { FiSearch } from "react-icons/fi";
+import {
+  differenceInHours,
+  differenceInMinutes,
+  differenceInMonths,
+  differenceInWeeks,
+  differenceInYears,
+  format,
+  isThisWeek,
+  isYesterday,
+} from "date-fns";
+import { BiSolidUser } from "react-icons/bi";
 
 const formatTime = (raw) => {
+  if (typeof raw !== "string") return "";
+
   const date = new Date(
     raw.replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3").replace(" ", "T")
   );
+
   const now = new Date();
 
-  if (isNaN(date)) return "Invalid date";
+  if (isNaN(date)) return "";
 
   const mins = differenceInMinutes(now, date);
   const hours = differenceInHours(now, date);
@@ -35,16 +39,27 @@ const formatTime = (raw) => {
   return `${years} year${years === 1 ? "" : "s"} ago`;
 };
 
-const Sidebar = ({ conversations, setChat, chat }) => {
+export const Sidebar = ({ conversations, changeConversation }) => {
   const [search, setSearch] = useState("");
+  const [selectedConversation, setSelectedConversation] = useState(null);
 
-  const filteredConversations = conversations.filter((c) =>
-    c.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const handleConversationClick = (conversation) => {
+    setSelectedConversation(conversation);
+    changeConversation(
+      parseInt(conversation.companyId),
+      parseInt(conversation.jobId)
+    );
+  };
+
+  const filteredConversations = conversations
+    ? conversations.filter((c) =>
+        c.jobName.toLowerCase().includes(search.toLowerCase())
+      )
+    : [];
 
   return (
-    <div>
-      <div className="p-4 border-b h-[65px] relative flex items-center ">
+    <div className="w-full bg-white border-r h-screen overflow-y-auto">
+      <div className="p-4 border-b h-[65px] relative flex items-center">
         <input
           type="text"
           value={search}
@@ -55,39 +70,45 @@ const Sidebar = ({ conversations, setChat, chat }) => {
         <FiSearch className="absolute left-8 text-gray-400" />
       </div>
 
-      {filteredConversations.map((c) => (
+      {filteredConversations.map((c, index) => (
         <div
-          key={c.id}
-          onClick={() => setChat(c.id)}
-          className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 border-b ${
-            chat === c.id ? "bg-gray-100" : ""
+          key={index}
+          onClick={() => handleConversationClick(c)}
+          className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 border-b gap-2 ${
+            selectedConversation?.jobId === c.jobId ? "bg-gray-200" : ""
           }`}
         >
-          <div className="w-10 h-10 rounded-full mr-3 relative">
-            <img
-              src={c.avatar}
-              alt={c.name}
-              className="w-full h-full object-contain rounded-full"
-            />
-            {c.status === "Active now" && (
-              <div className="w-3 h-3 rounded-full bg-[#fff] flex items-center justify-center absolute bottom-0 right-0">
-                <div className="bg-green-400 w-2 h-2 rounded-full"></div>
-              </div>
-            )}
-          </div>
+          {c.companyPhoto ? (
+            <div className="w-10 h-10 rounded-full mr-3 relative border">
+              <img
+                src={c.companyPhoto}
+                alt={c.companyName}
+                className="w-full h-full object-contain rounded-full"
+              />
+            </div>
+          ) : (
+            <div className="h-10 w-10 border rounded-full flex items-center justify-center">
+              <BiSolidUser className="m-0 cursor-pointer w-[30px] h-[30px] text-[#666874]" />
+            </div>
+          )}
+
           <div className="flex-1 gap-2">
-            <p className="font-semibold text-sm md:text-base max-w-[140px] truncate">
-              {c.name}
+            <p
+              title={`${c.jobName}`}
+              className="font-semibold text-sm md:text-base max-w-[220px] truncate"
+            >
+              {c.jobName}
             </p>
             <p
-              className="text-[10px] md:text-sm text-gray-500 max-w-[120px] break-words"
-              title={c.lastMessage}
+              className="text-[10px] md:text-sm text-gray-500 max-w-[180px] truncate"
+              title={c.companyName}
             >
-              {c.lastMessage}
+              {c.companyName}
             </p>
           </div>
+
           <span className="text-[8px] md:text-xs text-gray-400">
-            {formatTime(c.time)}
+            {formatTime(new Date())}
           </span>
         </div>
       ))}

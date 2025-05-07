@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { FaPhoneAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function PhoneLogin() {
   const [step, setStep] = useState(1);
@@ -52,9 +54,31 @@ export default function PhoneLogin() {
       return;
     }
 
-    setShowPhoneError(false);
-    setStep(2);
-    setCountdown(30);
+    axios
+      .post("https://aichatbot-326159028339.us-central1.run.app/user/auth", {
+        phone: digits,
+      })
+      .then((response) => {
+        console.log(response.data.token);
+        console.log(response);
+        const token = response.data.token;
+        localStorage.removeItem("chatToken");
+        console.log("token", token);
+        localStorage.setItem("chatToken", token);
+
+        const redirectPath = localStorage.getItem("redirectPath") || "/chat";
+        localStorage.removeItem("redirectPath");
+        navigate(redirectPath);
+      })
+      .catch((error) => {
+        console.error("Error sending code:", error);
+        toast.error("Алдаа гарлаа");
+        setShowPhoneError(true);
+      });
+
+    // setShowPhoneError(false);
+    // setStep(2);
+    // setCountdown(30);
   };
 
   const handleVerifyOtp = () => {
@@ -63,7 +87,7 @@ export default function PhoneLogin() {
     if (enteredOtp.length === 6) {
       const fakeToken = "your_token_from_backend";
       localStorage.setItem("chatToken", fakeToken);
-      navigate("/");
+      navigate("/chat");
     } else {
       document.getElementById("otp-error").classList.remove("hidden");
     }
@@ -72,7 +96,7 @@ export default function PhoneLogin() {
   return (
     <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-md">
-        <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
+        <div className=" bg-[#229cec] p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Тавтай морилно уу</h1>
@@ -114,7 +138,7 @@ export default function PhoneLogin() {
 
               <button
                 onClick={handleSendCode}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
+                className="w-full bg-[#229cec] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
                 Баталгаажуулах код илгээх
               </button>
@@ -134,7 +158,7 @@ export default function PhoneLogin() {
                   </span>
                 </p>
                 <button
-                  className="text-blue-600 text-sm mt-1 hover:underline"
+                  className="text-[#229cec] text-sm mt-1 hover:underline"
                   onClick={() => setStep(1)}
                 >
                   Дугаар өөрчлөх
@@ -161,7 +185,7 @@ export default function PhoneLogin() {
                 </p>
                 <button
                   onClick={resendCode}
-                  className="text-blue-600 text-sm hover:underline"
+                  className="text-[#229cec] text-sm hover:underline"
                   disabled={countdown > 0}
                 >
                   {countdown > 0
@@ -172,7 +196,7 @@ export default function PhoneLogin() {
 
               <button
                 onClick={handleVerifyOtp}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
+                className="w-full bg-[#229cec] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
                 нэвтрэх
               </button>
@@ -180,6 +204,7 @@ export default function PhoneLogin() {
           )}
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }

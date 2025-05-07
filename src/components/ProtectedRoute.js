@@ -1,11 +1,16 @@
-// components/ProtectedRoute.js
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 
 const ProtectedRoute = ({ children }) => {
+  const location = useLocation();
   const isAuthenticated = !!localStorage.getItem("chatToken");
 
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    localStorage.setItem("redirectPath", location.pathname);
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

@@ -1,22 +1,47 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import SignUp from "./partials/SignUp";
 import Chat from "./page/Chat";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { Layout } from "./components/Layout";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/login" element={<SignUp />} />
+
+        {/* Redirect from "/chat" to "/chat/{cId}/{jId}" */}
         <Route
-          path="/"
+          path="/chat"
           element={
             <ProtectedRoute>
-              <Chat />
+              <Layout>
+                <Chat />
+              </Layout>
             </ProtectedRoute>
           }
         />
+
+        {/* Main chat route with cId and jId */}
+        <Route
+          path="/chat/:cId/:jId"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Chat />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all route for unmatched paths */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
