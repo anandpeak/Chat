@@ -58,7 +58,7 @@ export const Sidebar = ({ conversations, changeConversation }) => {
     : [];
 
   return (
-    <div className="w-full bg-white border-r h-screen overflow-y-auto">
+    <div className="w-full bg-white border-r h-screen flex flex-col">
       <div className="p-4 border-b h-[65px] relative flex items-center">
         <input
           type="text"
@@ -70,48 +70,51 @@ export const Sidebar = ({ conversations, changeConversation }) => {
         <FiSearch className="absolute left-8 text-gray-400" />
       </div>
 
-      {filteredConversations.map((c, index) => (
-        <div
-          key={index}
-          onClick={() => handleConversationClick(c)}
-          className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 border-b gap-2 ${
-            selectedConversation?.jobId === c.jobId ? "bg-gray-200" : ""
-          }`}
-        >
-          {c.companyPhoto ? (
-            <div className="w-10 h-10 rounded-full mr-3 relative border">
-              <img
-                src={c.companyPhoto}
-                alt={c.companyName}
-                className="w-full h-full object-contain rounded-full"
-              />
-            </div>
-          ) : (
-            <div className="h-10 w-10 border rounded-full flex items-center justify-center">
-              <BiSolidUser className="m-0 cursor-pointer w-[30px] h-[30px] text-[#666874]" />
-            </div>
-          )}
+      {/* Scrollable Conversation List */}
+      <div className="flex-1 overflow-y-auto">
+        {filteredConversations.map((c, index) => (
+          <div
+            key={index}
+            onClick={() => handleConversationClick(c)}
+            className={`flex items-center p-4 cursor-pointer hover:bg-gray-100 border-b gap-2 ${
+              selectedConversation?.jobId === c.jobId ? "bg-gray-200" : ""
+            }`}
+          >
+            {c.companyPhoto ? (
+              <div className="w-10 h-10 rounded-full mr-3 relative border">
+                <img
+                  src={c.companyPhoto}
+                  alt={c.companyName}
+                  className="w-full h-full object-contain rounded-full"
+                />
+              </div>
+            ) : (
+              <div className="h-10 w-10 border rounded-full flex items-center justify-center">
+                <BiSolidUser className="m-0 cursor-pointer w-[30px] h-[30px] text-[#666874]" />
+              </div>
+            )}
 
-          <div className="flex-1 gap-2">
-            <p
-              title={`${c.jobName}`}
-              className="font-semibold text-sm md:text-base max-w-[220px] truncate"
-            >
-              {c.jobName}
-            </p>
-            <p
-              className="text-[10px] md:text-sm text-gray-500 max-w-[180px] truncate"
-              title={c.companyName}
-            >
-              {c.companyName}
-            </p>
+            <div className="flex-1 gap-2">
+              <p
+                title={`${c.jobName}`}
+                className="font-semibold text-sm md:text-base max-w-[220px] truncate"
+              >
+                {c.jobName}
+              </p>
+              <p
+                className="text-[10px] md:text-sm text-gray-500 max-w-[180px] truncate"
+                title={c.companyName}
+              >
+                {c.companyName}
+              </p>
+            </div>
+
+            <span className="text-[8px] md:text-xs text-gray-400">
+              {formatTime(new Date())}
+            </span>
           </div>
-
-          <span className="text-[8px] md:text-xs text-gray-400">
-            {formatTime(new Date())}
-          </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
