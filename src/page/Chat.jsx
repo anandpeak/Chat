@@ -417,11 +417,11 @@ export default function Chat() {
                 >
                   {sender === "them" && (
                     <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
-                      {history.avatar ? (
+                      {!history.avatar ? (
                         <img
-                          src={history.avatar}
+                          src={`/chatbot.jpeg`}
                           alt={history.name}
-                          className="w-full h-full object-contain rounded-full"
+                          className="w-full h-full object-cover rounded-full"
                         />
                       ) : (
                         <BiSolidUser className="m-0 cursor-pointer w-[25px] h-[25px] text-[#666874]" />
