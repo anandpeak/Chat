@@ -142,9 +142,10 @@ export default function PhoneLogin() {
 
               <button
                 onClick={handleSendCode}
+                onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
                 className="w-full bg-[#229cec] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
-                Баталгаажуулах код илгээх
+                {/* Баталгаажуулах код илгээх */}Нэвтрэх
               </button>
             </div>
           )}

@@ -5,15 +5,15 @@ import { useNavigate } from "react-router-dom";
 export const Header = ({ activeConversation, setIsSidebarOpen }) => {
   const navigate = useNavigate();
 
-  return activeConversation ? (
+  return (
     <div className="flex items-center justify-between p-4 border-b h-[65px]">
       <div className="flex items-center">
         <div className="w-10 h-10 rounded-full mr-3 relative">
-          {activeConversation.companyPhoto ? (
+          {activeConversation?.companyPhoto ? (
             <div className="w-10 h-10 rounded-full mr-3 relative border">
               <img
-                src={activeConversation.companyPhoto}
-                alt={activeConversation.companyName}
+                src={activeConversation?.companyPhoto}
+                alt={activeConversation?.companyName}
                 className="w-full h-full object-contain rounded-full"
               />
             </div>
@@ -52,5 +52,5 @@ export const Header = ({ activeConversation, setIsSidebarOpen }) => {
         </button>
       </div>
     </div>
-  ) : null;
+  );
 };

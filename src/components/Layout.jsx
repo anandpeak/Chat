@@ -68,7 +68,7 @@ export const Layout = ({ children }) => {
   if (loading) return <Loading />;
 
   return (
-    <div className="flex h-screen font-sans">
+    <div className="flex h-[calc(var(--vh,1vh)*100)] font-sans">
       <div
         className={`
           fixed inset-y-0 left-0 z-30 w-64 bg-white border-r overflow-y-auto transform 
