@@ -1,10 +1,6 @@
 import { BiMenu, BiSolidUser } from "react-icons/bi";
-import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
 
 export const Header = ({ activeConversation, setIsSidebarOpen }) => {
-  const navigate = useNavigate();
-
   return (
     <div className="flex items-center justify-between p-4 border-b h-[65px]">
       <div className="flex items-center">
@@ -39,16 +35,6 @@ export const Header = ({ activeConversation, setIsSidebarOpen }) => {
           className="text-2xl mr-3 md:hidden"
         >
           <BiMenu />
-        </button>
-        <button
-          onClick={() => {
-            Cookies.remove("chatToken");
-
-            navigate("/login");
-          }}
-          className="px-3 py-1 text-white bg-red-500 hover:bg-red-700 rounded-full  transition duration-300 ease-in-out"
-        >
-          Logout
         </button>
       </div>
     </div>

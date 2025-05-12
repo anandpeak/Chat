@@ -100,7 +100,7 @@ export default function PhoneLogin() {
   return (
     <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-md">
-        <div className=" bg-[#229cec] p-6 text-white">
+        <div className=" bg-[#000] p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold">Тавтай морилно уу</h1>
@@ -124,7 +124,7 @@ export default function PhoneLogin() {
                   Утасны дугаар
                 </label>
                 <div className="phone-input-container flex items-center border border-gray-300 rounded-lg px-3 py-2">
-                  <FaPhoneAlt className="text-blue-500" />
+                  <FaPhoneAlt className="text-[#000]" />
                   <input
                     type="tel"
                     className="flex-1 border-0 focus:ring-0 px-3 py-1 ml-2"
@@ -143,7 +143,7 @@ export default function PhoneLogin() {
               <button
                 onClick={handleSendCode}
                 onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
-                className="w-full bg-[#229cec] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
+                className="w-full bg-[#000] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
                 {/* Баталгаажуулах код илгээх */}Нэвтрэх
               </button>
@@ -163,7 +163,7 @@ export default function PhoneLogin() {
                   </span>
                 </p>
                 <button
-                  className="text-[#229cec] text-sm mt-1 hover:underline"
+                  className="text-[#000] text-sm mt-1 hover:underline"
                   onClick={() => setStep(1)}
                 >
                   Дугаар өөрчлөх
@@ -190,7 +190,7 @@ export default function PhoneLogin() {
                 </p>
                 <button
                   onClick={resendCode}
-                  className="text-[#229cec] text-sm hover:underline"
+                  className="text-[#000] text-sm hover:underline"
                   disabled={countdown > 0}
                 >
                   {countdown > 0
@@ -201,7 +201,7 @@ export default function PhoneLogin() {
 
               <button
                 onClick={handleVerifyOtp}
-                className="w-full bg-[#229cec] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
+                className="w-full bg-[#000] hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
                 нэвтрэх
               </button>

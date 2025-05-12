@@ -89,7 +89,7 @@ export const Layout = ({ children }) => {
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black opacity-30 z-20 md:hidden"
+          className="fixed inset-0 bg-[#000] opacity-30 z-20 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

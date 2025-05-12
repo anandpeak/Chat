@@ -364,9 +364,9 @@ export default function Chat() {
   }, [history?.textReponse]);
 
   return (
-    <div className="w-full flex flex-col h-full bg-gray-50">
+    <div className="w-full flex flex-col h-full bg-gray-50 relative">
       <div
-        className="flex-1 overflow-y-scroll p-4 space-y-4 md:space-y-2"
+        className="flex-1 overflow-y-scroll p-4 space-y-4 md:space-y-2 pb-28"
         ref={chatContainerRef}
       >
         {loading ? (
@@ -411,7 +411,7 @@ export default function Chat() {
               return (
                 <div
                   key={idx}
-                  className={`flex items-end gap-3 ${
+                  className={`flex items-end gap-3  ${
                     sender === "me" ? "justify-end" : "justify-start"
                   } group`}
                 >
@@ -435,10 +435,10 @@ export default function Chat() {
                   )}
 
                   <div
-                    className={`relative max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl shadow text-sm transition-colors duration-300 flex flex-col ${
+                    className={`relative max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl shadow-custom text-sm transition-colors duration-300 flex flex-col  ${
                       sender === "me"
-                        ? "bg-blue-500 text-white"
-                        : "bg-white text-black"
+                        ? "bg-[#000] text-white"
+                        : "bg-white text-[#000]"
                     }`}
                   >
                     {msg.chatbot && <p>{msg.chatbot}</p>}
@@ -501,12 +501,16 @@ export default function Chat() {
         )}
         {loadingChat && (
           <div className={`flex items-end gap-3 justify-start pt-4`}>
-            <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
-              <BiSolidUser className="m-0 cursor-pointer w-[25px] h-[25px] text-[#666874]" />
+            <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff] shadow-xl">
+              <img
+                src={`/chatbot.jpeg`}
+                alt={history.name}
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
 
             <div
-              className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl bg-white`}
+              className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl bg-white shadow-custom`}
             >
               <Skeleton width="80%" height={16} />
               <Skeleton width="60%" height={16} />
@@ -516,7 +520,9 @@ export default function Chat() {
         )}
       </div>
 
-      <div className={`p-4 border-t bg-none flex-shrink-0`}>
+      <div
+        className={`p-4 border flex-shrink-0 bg-[#fff] shadow-xl w-[90%] rounded-3xl bg-none absolute bottom-4 left-1/2 transform -translate-x-1/2`}
+      >
         {pendingAttachment && (
           <div className="mb-2 flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white">
             {pendingAttachment.type.startsWith("image/") && (
@@ -599,8 +605,11 @@ export default function Chat() {
               onChange={(e) => setMessageText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && sendMessage()}
               placeholder="Type a message..."
-              className="flex-1 px-4 py-2 rounded-full border focus:outline-none bg-gray-100 md:text-base text-sm"
+              className="flex-1 px-4 py-2 rounded-full border focus:outline-none bg-gray-100 md:text-base text-sm touch-none"
+              style={{ touchAction: "manipulation" }}
+              inputMode="none"
             />
+
             {/* <button
               className={`text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center `}
               title={"Hold to Record"}
@@ -611,7 +620,7 @@ export default function Chat() {
 
             <button
               onClick={sendMessage}
-              className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
+              className="bg-[#000] text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
             >
               Send
             </button>
