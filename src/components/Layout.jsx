@@ -42,7 +42,7 @@ export const Layout = ({ children }) => {
       parseInt(conv.jobId) === parseInt(jId)
   );
 
-  if (loading) return <Loading />;
+  if (!loading) return <Loading />;
 
   return (
     <div className="flex h-[calc(var(--vh,1vh)*100)] font-sans">
