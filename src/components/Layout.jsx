@@ -1,56 +1,33 @@
-import { useCallback, useEffect, useState } from "react";
+import React, { useContext, useState, useCallback, useEffect } from "react";
+import { ConversationsContext } from "../context/ConversationsContext";
 import { Sidebar } from "../partials/Sidebar";
 import { Header } from "../partials/Header";
-import axios from "axios";
-import { useParams, useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Loading from "../components/Loading";
-import Cookies from "js-cookie";
+import { motion, AnimatePresence } from "framer-motion";
 
 export const Layout = ({ children }) => {
   const { cId, jId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const navigateToChat = useCallback(
-    (cId, jId) => {
-      const targetPath = `/chat/${cId}/${jId}`;
-      if (location.pathname !== targetPath) {
-        navigate(targetPath);
-      }
-    },
-    [location.pathname, navigate]
-  );
+  // Accessing context
+  const { conversations, loading } = useContext(ConversationsContext);
 
   useEffect(() => {
-    const token = Cookies.get("chatToken");
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
 
-    axios
-      .get(`https://aichatbot-326159028339.us-central1.run.app/chat/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      .then((data) => {
-        const conversations = data.data.data;
-        setConversations(conversations);
+    handleResize();
 
-        if (conversations.length > 0 && location.pathname === "/chat") {
-          const firstConversation = conversations[0];
-          const newCId = firstConversation?.companyId;
-          const newJId = firstConversation?.jobId;
-
-          if (newCId && newJId) {
-            navigateToChat(parseInt(newCId), parseInt(newJId));
-          }
-        }
-
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [location.pathname, navigateToChat]);
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   const changeConversation = (cId, jId) => {
     const targetPath = `/chat/${cId}/${jId}`;
@@ -69,42 +46,49 @@ export const Layout = ({ children }) => {
 
   return (
     <div className="flex h-[calc(var(--vh,1vh)*100)] font-sans">
-      <div
-        className={`
-          fixed inset-y-0 left-0 z-30 w-64 bg-white border-r overflow-y-auto transform 
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"} 
-          transition-transform duration-300 ease-in-out
-          md:relative md:translate-x-0 md:w-[30%]
-        `}
-      >
-        <Sidebar
-          conversations={conversations}
-          isSidebarOpen={isSidebarOpen}
-          setIsSidebarOpen={setIsSidebarOpen}
-          changeConversation={changeConversation}
-          cId={cId}
-          jId={jId}
-        />
-      </div>
+      <AnimatePresence>
+        {isSidebarOpen && (
+          <motion.div
+            key="sidebar"
+            initial={{ x: "-100%", width: "0%" }}
+            animate={{
+              x: 0,
+              width: isMobile ? "300px" : "30%", // Adjust width based on device
+            }}
+            exit={{ x: "-100%", width: "0%" }}
+            transition={{ duration: 0.5, ease: "easeInOut" }}
+            className="fixed inset-y-0 left-0 z-30 bg-white border-r overflow-y-auto md:relative md:translate-x-0"
+          >
+            <Sidebar
+              conversations={conversations}
+              isSidebarOpen={isSidebarOpen}
+              setIsSidebarOpen={setIsSidebarOpen}
+              changeConversation={changeConversation}
+              cId={cId}
+              jId={jId}
+            />
+          </motion.div>
+        )}
 
-      {isSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-[#000] opacity-30 z-20 md:hidden"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
+        {isSidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.3 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#000] z-20 md:hidden"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <div className="flex flex-col w-full">
         <Header
           activeConversation={activeConversation}
+          isSidebarOpen={isSidebarOpen}
           setIsSidebarOpen={setIsSidebarOpen}
         />
-        <div
-          className={`w-full ${
-            conversations.length === 0 ? "h-screen" : "h-[90%] md:h-[92%]"
-          }`}
-        >
-          {children}
+        <div className="w-full bg-gray-50 h-[90%] md:h-[92%]">
+          {React.cloneElement(children, { isSidebarOpen })}
         </div>
       </div>
     </div>

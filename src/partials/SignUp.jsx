@@ -13,6 +13,7 @@ export default function PhoneLogin() {
   const [countdown, setCountdown] = useState(30);
   const otpRefs = useRef([]);
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (step === 2 && countdown > 0) {
@@ -55,19 +56,17 @@ export default function PhoneLogin() {
       return;
     }
 
+    setLoading(true); // Start loading
+
     axios
       .post("https://aichatbot-326159028339.us-central1.run.app/user/auth", {
         phone: digits,
       })
       .then((response) => {
         console.log(response.data.token);
-        console.log(response);
         const token = response.data.token;
 
         Cookies.remove("chatToken");
-
-        console.log("token", token);
-
         Cookies.set("chatToken", token, { expires: 7 });
 
         const redirectPath = localStorage.getItem("redirectPath") || "/chat";
@@ -78,11 +77,10 @@ export default function PhoneLogin() {
         console.error("Error sending code:", error);
         toast.error("Алдаа гарлаа");
         setShowPhoneError(true);
+      })
+      .finally(() => {
+        setLoading(false);
       });
-
-    // setShowPhoneError(false);
-    // setStep(2);
-    // setCountdown(30);
   };
 
   const handleVerifyOtp = () => {
@@ -127,10 +125,12 @@ export default function PhoneLogin() {
                   <FaPhoneAlt className="text-[#000]" />
                   <input
                     type="tel"
-                    className="flex-1 border-0 focus:ring-0 px-3 py-1 ml-2"
+                    className="flex-1 border-0 focus:ring-0 focus:outline-none px-3 py-1 ml-2"
                     value={formatPhone(phoneNumber)}
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="1234-5678"
+                    disabled={loading}
+                    onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
                   />
                 </div>
                 {showPhoneError && (
@@ -145,7 +145,14 @@ export default function PhoneLogin() {
                 onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
                 className="w-full bg-[#000] hover:bg-opacity-60 text-white font-medium py-2.5 px-4 rounded-lg transition duration-300"
               >
-                {/* Баталгаажуулах код илгээх */}Нэвтрэх
+                {loading ? (
+                  <>
+                    <div className="animate-spin border-4 border-t-4 rounded-full border-gray-300 border-t-gray-800 w-5 h-5 inline-block mr-2"></div>
+                    Нэвтрэх...
+                  </>
+                ) : (
+                  "Нэвтрэх"
+                )}
               </button>
             </div>
           )}

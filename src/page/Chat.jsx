@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 
 import { BiSolidUser } from "react-icons/bi";
 import Cookies from "js-cookie";
@@ -7,6 +7,8 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
+import { IoIosSend } from "react-icons/io";
+import { ConversationsContext } from "../context/ConversationsContext";
 
 const VoiceMessage = ({ file }) => {
   const audioRef = useRef(null);
@@ -71,7 +73,7 @@ const VoiceMessage = ({ file }) => {
     <div className=" text-white flex items-center justify-between space-x-3 max-w-xs">
       <button
         onClick={togglePlay}
-        className="p-2 bg-blue-500 text-white rounded-full"
+        className="p-2 bg-[#000] text-white rounded-full"
       >
         {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} />}
       </button>
@@ -93,7 +95,7 @@ const VoiceMessage = ({ file }) => {
   );
 };
 
-export default function Chat() {
+export default function Chat({ isSidebarOpen }) {
   const { cId, jId } = useParams();
   const [messageText, setMessageText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState(null);
@@ -111,6 +113,10 @@ export default function Chat() {
 
   const maxFileSize = 25 * 1024 * 1024;
   const fileInputRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  const { refreshConversations } = useContext(ConversationsContext);
+
   useEffect(() => {
     setLoading(true);
     const token = Cookies.get("chatToken");
@@ -280,9 +286,15 @@ export default function Chat() {
   const sendMessage = async () => {
     const text = messageText.trim();
 
-    setMessageText("");
-
     if (!text && !pendingAttachment) return;
+
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.rows = 1;
+      textarea.style.height = "auto";
+      textarea.selectionStart = 0;
+      textarea.selectionEnd = 0;
+    }
 
     const newMessage = {
       sender: "me",
@@ -299,6 +311,8 @@ export default function Chat() {
       };
     }
 
+    setMessageText("");
+
     if (pendingAttachment) {
       newMessage.file = pendingAttachment;
     }
@@ -308,7 +322,6 @@ export default function Chat() {
         ...prev.textReponse,
         { user: text, chatbot: null },
       ];
-
       return { ...prev, textReponse: updatedTextResponse };
     });
 
@@ -334,10 +347,12 @@ export default function Chat() {
           ...prev.textReponse,
           { user: null, chatbot: data.textReponse },
         ];
-
         return { ...prev, textReponse: updatedTextResponse };
       });
 
+      if (history.textReponse.length <= 1) {
+        refreshConversations();
+      }
       setLoadingChat(false);
     } catch (error) {
       console.error("Error sending message: ", error);
@@ -364,9 +379,11 @@ export default function Chat() {
   }, [history?.textReponse]);
 
   return (
-    <div className="w-full flex flex-col h-full bg-gray-50 relative">
+    <div className="w-full flex flex-col h-full  relative">
       <div
-        className="flex-1 overflow-y-scroll p-4 space-y-4 md:space-y-2 pb-28"
+        className={`flex-1 overflow-y-scroll p-4 space-y-4 md:space-y-8 pb-28 ${
+          isSidebarOpen ? "md:px-[10%]" : "md:px-[20%]"
+        } px-6`}
         ref={chatContainerRef}
       >
         {loading ? (
@@ -386,7 +403,7 @@ export default function Chat() {
 
                 <div
                   className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl ${
-                    index % 2 === 0 ? "bg-white" : "bg-blue-500 text-white"
+                    index % 2 === 0 ? "bg-white" : "bg-[#000] text-white"
                   }`}
                 >
                   <Skeleton width="80%" height={16} />
@@ -441,8 +458,17 @@ export default function Chat() {
                         : "bg-white text-[#000]"
                     }`}
                   >
-                    {msg.chatbot && <p>{msg.chatbot}</p>}
-                    {msg.user && <p>{msg.user}</p>}
+                    {msg.chatbot && (
+                      <p className="whitespace-pre-wrap break-words">
+                        {msg.chatbot}
+                      </p>
+                    )}
+
+                    {msg.user && (
+                      <p className="whitespace-pre-wrap break-words">
+                        {msg.user}
+                      </p>
+                    )}
 
                     {msg.file && (
                       <div className="mt-1">
@@ -521,7 +547,9 @@ export default function Chat() {
       </div>
 
       <div
-        className={`p-4 border flex-shrink-0 bg-[#fff] shadow-xl w-[90%] rounded-3xl bg-none absolute bottom-4 left-1/2 transform -translate-x-1/2`}
+        className={`p-4 border flex-shrink-0 bg-[#fff] shadow-xl ${
+          isSidebarOpen ? "md:w-[80%]" : "md:w-[60%]"
+        } w-[90%] rounded-3xl bg-none absolute bottom-4 left-1/2 transform -translate-x-1/2`}
       >
         {pendingAttachment && (
           <div className="mb-2 flex items-center gap-2 p-2 border border-gray-300 rounded-lg bg-white">
@@ -576,7 +604,7 @@ export default function Chat() {
             </div>
             <button
               onClick={stopRecordingAndSend}
-              className="bg-blue-500 text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
+              className="bg-[#000] text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
             >
               Send
             </button>
@@ -599,16 +627,39 @@ export default function Chat() {
               </button> */}
             </>
 
-            <input
-              type="text"
+            <textarea
+              ref={textareaRef}
               value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              onChange={(e) => {
+                let value = e.target.value;
+
+                while (value.startsWith("\n")) {
+                  value = value.substring(1);
+                }
+
+                setMessageText(value);
+              }}
+              onInput={(e) => {
+                const target = e.target;
+                const maxRows = 3;
+                target.rows = 1;
+
+                const currentRows = target.scrollHeight / 24;
+                target.rows = Math.min(Math.floor(currentRows), maxRows);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  sendMessage();
+                  e.preventDefault();
+                }
+              }}
               placeholder="Type a message..."
-              className="flex-1 px-4 py-2 rounded-full border focus:outline-none bg-gray-100 md:text-base text-sm touch-none"
+              className="flex-1 px-4 py-2 rounded-full focus:outline-none bg-gray-100 md:text-base text-sm touch-none resize-none"
               style={{ touchAction: "manipulation" }}
-              inputMode="none"
+              rows={1}
             />
+
+            {console.log(messageText)}
 
             {/* <button
               className={`text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center `}
@@ -620,9 +671,9 @@ export default function Chat() {
 
             <button
               onClick={sendMessage}
-              className="bg-[#000] text-white px-4 py-2 rounded-full ml-2 md:text-base text-sm"
+              className="bg-[#000] text-white p-2 rounded-full ml-2 md:text-base text-1xl"
             >
-              Send
+              <IoIosSend />
             </button>
           </div>
         )}

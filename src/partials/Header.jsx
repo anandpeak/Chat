@@ -1,12 +1,44 @@
-import { BiMenu, BiSolidUser } from "react-icons/bi";
+import { BiSolidUser } from "react-icons/bi";
+import { motion } from "framer-motion";
 
-export const Header = ({ activeConversation, setIsSidebarOpen }) => {
+export const Header = ({
+  activeConversation,
+  setIsSidebarOpen,
+  isSidebarOpen,
+}) => {
   return (
-    <div className="flex items-center justify-between p-4 border-b h-[65px]">
+    <div
+      className={`flex items-center p-4 ${
+        isSidebarOpen ? "border-b" : "bg-gray-50 md:border-none border-b"
+      } h-[65px] gap-2`}
+    >
+      <motion.div
+        className={`flex items-center gap-1 ${isSidebarOpen ? "hidden" : ""}`}
+        initial={{ x: -20, opacity: 1 }}
+        animate={{
+          x: isSidebarOpen ? -20 : 0,
+          opacity: isSidebarOpen ? 0 : 1,
+        }}
+        exit={{ x: -20, opacity: 0 }}
+        transition={{
+          duration: 0.3,
+          ease: "easeInOut",
+        }}
+      >
+        <motion.button
+          onClick={() => setIsSidebarOpen(true)}
+          title="open sidebar"
+          className={`px-2 p-1 hover:bg-[#000] hover:bg-opacity-10 rounded-xl ${
+            isSidebarOpen ? "cursor-default" : "cursor-pointer"
+          }`}
+        >
+          <img className="w-[30px]" src="/icon/sidebar.png" alt="icon" />
+        </motion.button>
+      </motion.div>
       <div className="flex items-center">
         <div className="w-10 h-10 rounded-full mr-3 relative">
           {activeConversation?.companyPhoto ? (
-            <div className="w-10 h-10 rounded-full mr-3 relative border">
+            <div className="w-10 h-10 rounded-full mr-3 relative border border-[#ccc]">
               <img
                 src={activeConversation?.companyPhoto}
                 alt={activeConversation?.companyName}
@@ -25,17 +57,11 @@ export const Header = ({ activeConversation, setIsSidebarOpen }) => {
           )}
         </div>
         <div>
-          <p className="font-semibold">{activeConversation?.companyName}</p>
+          <p className="font-semibold max-w-[160px] truncate">
+            {activeConversation?.companyName}
+          </p>
           {/* <p className="text-sm">{activeConversation.status}</p> */}
         </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={() => setIsSidebarOpen(true)}
-          className="text-2xl mr-3 md:hidden"
-        >
-          <BiMenu />
-        </button>
       </div>
     </div>
   );
