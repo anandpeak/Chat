@@ -57,7 +57,7 @@ export const Header = ({
           )}
         </div>
         <div>
-          <p className="font-semibold max-w-[160px] truncate">
+          <p className="font-semibold max-w-[160px] md:max-w-[160px] truncate">
             {activeConversation?.companyName}
           </p>
           {/* <p className="text-sm">{activeConversation.status}</p> */}
