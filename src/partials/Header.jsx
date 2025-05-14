@@ -1,5 +1,6 @@
 import { BiSolidUser } from "react-icons/bi";
 import { motion } from "framer-motion";
+import { IoIosArrowBack } from "react-icons/io";
 
 export const Header = ({
   activeConversation,
@@ -28,11 +29,11 @@ export const Header = ({
         <motion.button
           onClick={() => setIsSidebarOpen(true)}
           title="open sidebar"
-          className={`px-2 p-1 hover:bg-[#000] hover:bg-opacity-10 rounded-xl ${
+          className={`p-1 hover:bg-[#000] hover:bg-opacity-10 rounded-full ${
             isSidebarOpen ? "cursor-default" : "cursor-pointer"
           }`}
         >
-          <img className="w-[30px]" src="/icon/sidebar.png" alt="icon" />
+          <IoIosArrowBack className="text-[24px]" />
         </motion.button>
       </motion.div>
       <div className="flex items-center">

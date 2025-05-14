@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import { IoIosLogOut } from "react-icons/io";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import { IoMdClose } from "react-icons/io";
+import { IoIosArrowForward } from "react-icons/io";
 
 const formatTime = (raw) => {
   if (typeof raw !== "string") return "";
@@ -78,11 +79,11 @@ export const Sidebar = ({
           <button
             onClick={() => setIsSidebarOpen(false)}
             title="close sidebar"
-            className={`px-2 p-1 hover:bg-[#000] hover:bg-opacity-10 rounded-xl ${
+            className={`p-1 hover:bg-[#000] hover:bg-opacity-10 rounded-full ${
               !isSidebarOpen && "hidden"
             }`}
           >
-            <img className="w-[30px] " src="/icon/sidebar.png" alt="icon" />
+            <IoIosArrowForward className="text-[24px]" />
           </button>
           <button
             title="search chats"
