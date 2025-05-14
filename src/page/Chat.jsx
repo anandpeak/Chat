@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 
-import { BiSolidUser } from "react-icons/bi";
+import { BiMicrophone, BiSolidUser } from "react-icons/bi";
 import Cookies from "js-cookie";
 import { FaPause, FaPlay, FaTrash } from "react-icons/fa";
 import { useParams } from "react-router-dom";
@@ -99,6 +99,7 @@ export default function Chat({ isSidebarOpen }) {
   const { cId, jId } = useParams();
   const [messageText, setMessageText] = useState("");
   const [pendingAttachment, setPendingAttachment] = useState(null);
+  const [voiceMsg, setVoiceMsg] = useState(null);
   const [history, setHistory] = useState(null);
 
   const [recordingTime, setRecordingTime] = useState(0);
@@ -212,42 +213,39 @@ export default function Chat({ isSidebarOpen }) {
     setIsRecording(false);
 
     const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    const audioUrl = URL.createObjectURL(audioBlob);
+    const formData = new FormData();
+    formData.append("audio", audioBlob);
 
-    const audio = new Audio(audioUrl);
+    const token = Cookies.get("chatToken");
 
-    const durationFromMetadata = await new Promise((resolve) => {
-      audio.onloadedmetadata = () => {
-        if (isFinite(audio.duration) && audio.duration > 0) {
-          resolve(audio.duration);
-        } else {
-          resolve(null);
+    try {
+      const response = await axios.post(
+        "https://aichatbot-326159028339.us-central1.run.app/chat/conversation/voice",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
+
+      const data = response.data;
+
+      const audioFile = {
+        name: data.name || `audio-${Date.now()}.webm`,
+        type: "audio/webm",
+        url: data.url,
+        duration: data.duration || null,
       };
-      audio.onerror = () => resolve(null);
-    });
 
-    let duration = durationFromMetadata;
-    if (!durationFromMetadata) {
-      duration = await getAudioDurationFromBlob(audioBlob);
+      console.log("audioFile", audioFile);
+      setVoiceMsg(audioFile);
+      await sendMessage();
+    } catch (error) {
+      console.error("Error sending voice message: ", error);
     }
 
-    if (!duration || !isFinite(duration)) {
-      console.warn("Could not determine duration accurately, using fallback");
-      duration = calculateDurationFallback(audioChunks);
-    }
-
-    console.log("Final Duration:", duration);
-
-    const audioFile = {
-      name: `audio-${Date.now()}.webm`,
-      type: "audio/webm",
-      url: audioUrl,
-      duration: duration,
-    };
-
-    setPendingAttachment(audioFile);
-    sendMessage();
     mediaRecorderRef.current = null;
   };
 
@@ -284,9 +282,12 @@ export default function Chat({ isSidebarOpen }) {
   };
 
   const sendMessage = async () => {
+    console.log("called");
+    console.log("voiceMsg = ", voiceMsg);
     const text = messageText.trim();
-
-    if (!text && !pendingAttachment) return;
+    if (!text && !voiceMsg) return;
+    console.log("worked");
+    setLoadingChat(true);
 
     const textarea = textareaRef.current;
     if (textarea) {
@@ -296,70 +297,110 @@ export default function Chat({ isSidebarOpen }) {
       textarea.selectionEnd = 0;
     }
 
-    const newMessage = {
-      sender: "me",
-      time: new Date().toISOString(),
-      text: null,
-      file: null,
-    };
-
-    if (text) {
-      newMessage.text = {
-        text,
-        companyId: cId,
-        jobId: jId,
-      };
-    }
-
-    setMessageText("");
-
-    if (pendingAttachment) {
-      newMessage.file = pendingAttachment;
-    }
-
-    setHistory((prev) => {
-      const updatedTextResponse = [
-        ...prev.textReponse,
-        { user: text, chatbot: null },
-      ];
-      return { ...prev, textReponse: updatedTextResponse };
-    });
-
     const token = Cookies.get("chatToken");
 
-    setLoadingChat(true);
-    try {
-      const response = await axios.post(
-        "https://aichatbot-326159028339.us-central1.run.app/chat/conversation",
-        newMessage.text,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = response.data;
+    if (voiceMsg !== null) {
+      const newMessage = {
+        sender: "me",
+        time: new Date().toISOString(),
+        text: {
+          text: voiceMsg.url,
+          companyId: cId,
+          jobId: jId,
+        },
+        file: null,
+      };
 
       setHistory((prev) => {
         const updatedTextResponse = [
           ...prev.textReponse,
-          { user: null, chatbot: data.textReponse },
+          { user: voiceMsg.url, chatbot: null, voice: true },
         ];
         return { ...prev, textReponse: updatedTextResponse };
       });
 
-      if (history.textReponse.length <= 1) {
-        refreshConversations();
+      try {
+        const messageResponse = await axios.post(
+          "https://aichatbot-326159028339.us-central1.run.app/chat/conversation",
+          newMessage.text,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const messageData = messageResponse.data;
+
+        setHistory((prev) => {
+          const updatedTextResponse = [
+            ...prev.textReponse,
+            { user: null, chatbot: messageData.textReponse },
+          ];
+          return { ...prev, textReponse: updatedTextResponse };
+        });
+
+        setVoiceMsg(null);
+      } catch (error) {
+        console.error("Error sending voice message as text: ", error);
+        setLoadingChat(false);
       }
+
       setLoadingChat(false);
-    } catch (error) {
-      console.error("Error sending message: ", error);
-      setLoadingChat(false);
+      return;
     }
 
-    setPendingAttachment(null);
+    if (text) {
+      const newMessage = {
+        sender: "me",
+        time: new Date().toISOString(),
+        text: {
+          text,
+          companyId: cId,
+          jobId: jId,
+        },
+        file: null,
+      };
+
+      setMessageText("");
+
+      setHistory((prev) => {
+        const updatedTextResponse = [
+          ...prev.textReponse,
+          { user: text, chatbot: null },
+        ];
+        return { ...prev, textReponse: updatedTextResponse };
+      });
+
+      try {
+        const response = await axios.post(
+          "https://aichatbot-326159028339.us-central1.run.app/chat/conversation",
+          newMessage.text,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const data = response.data;
+
+        setHistory((prev) => {
+          const updatedTextResponse = [
+            ...prev.textReponse,
+            { user: null, chatbot: data.textReponse },
+          ];
+          return { ...prev, textReponse: updatedTextResponse };
+        });
+      } catch (error) {
+        console.error("Error sending message: ", error);
+        setLoadingChat(false);
+      }
+    }
+
+    setLoadingChat(false);
   };
 
   useEffect(() => {
@@ -432,6 +473,7 @@ export default function Chat({ isSidebarOpen }) {
                     sender === "me" ? "justify-end" : "justify-start"
                   } group`}
                 >
+                  {console.log(msg)}
                   {sender === "them" && (
                     <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
                       {!history.avatar ? (
@@ -469,7 +511,7 @@ export default function Chat({ isSidebarOpen }) {
                         {msg.user}
                       </p>
                     )}
-
+                    {msg.voice && <VoiceMessage file={msg.user} />}
                     {msg.file && (
                       <div className="mt-1">
                         {msg.file.type.startsWith("image/") && (
@@ -485,10 +527,6 @@ export default function Chat({ isSidebarOpen }) {
                             Your browser does not support the video tag.
                           </video>
                         )}
-                        {msg.file.type.startsWith("audio/") && (
-                          <VoiceMessage file={msg.file} />
-                        )}
-
                         {!msg.file.type.startsWith("image/") &&
                           !msg.file.type.startsWith("video/") && (
                             <a
@@ -659,15 +697,13 @@ export default function Chat({ isSidebarOpen }) {
               rows={1}
             />
 
-            {console.log(messageText)}
-
-            {/* <button
+            <button
               className={`text-blue-600 text-xl hover:bg-gray-100 rounded-full w-[32px] h-[32px] flex items-center justify-center `}
               title={"Hold to Record"}
               onClick={startRecording}
             >
               <BiMicrophone />
-            </button> */}
+            </button>
 
             <button
               onClick={sendMessage}

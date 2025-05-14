@@ -10,17 +10,17 @@ export default function PhoneLogin() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPhoneError, setShowPhoneError] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(""));
-  const [countdown, setCountdown] = useState(30);
+  const [countdown, setCountdown] = useState(500);
   const otpRefs = useRef([]);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (step === 2 && countdown > 0) {
-      const interval = setInterval(
-        () => setCountdown((prev) => prev - 1),
-        1000
-      );
+      const interval = setInterval(() => {
+        setCountdown((prev) => prev - 1);
+      }, 1000);
+
       return () => clearInterval(interval);
     }
   }, [step, countdown]);
@@ -46,7 +46,8 @@ export default function PhoneLogin() {
   };
 
   const resendCode = () => {
-    setCountdown(30);
+    setCountdown(500);
+    handleSendCode();
   };
 
   const handleSendCode = () => {
@@ -56,22 +57,22 @@ export default function PhoneLogin() {
       return;
     }
 
-    setLoading(true); // Start loading
+    setLoading(true);
 
     axios
-      .post("https://aichatbot-326159028339.us-central1.run.app/user/auth", {
-        phone: digits,
-      })
+      .post(
+        "https://aichatbot-326159028339.us-central1.run.app/user/otp/send",
+        {
+          phone: digits,
+        }
+      )
       .then((response) => {
-        console.log(response.data.token);
-        const token = response.data.token;
-
-        Cookies.remove("chatToken");
-        Cookies.set("chatToken", token, { expires: 7 });
-
-        const redirectPath = localStorage.getItem("redirectPath") || "/chat";
-        localStorage.removeItem("redirectPath");
-        navigate(redirectPath);
+        if (response.data.success) {
+          setStep(2);
+        } else {
+          toast.error("OTP илгээхэд алдаа гарлаа");
+          setShowPhoneError(true);
+        }
       })
       .catch((error) => {
         console.error("Error sending code:", error);
@@ -85,14 +86,41 @@ export default function PhoneLogin() {
 
   const handleVerifyOtp = () => {
     const enteredOtp = otp.join("");
+    const digits = phoneNumber.replace(/\D/g, "");
 
-    if (enteredOtp.length === 6) {
-      const fakeToken = "your_token_from_backend";
-      localStorage.setItem("chatToken", fakeToken);
-      navigate("/chat");
-    } else {
+    if (enteredOtp.length !== 6) {
       document.getElementById("otp-error").classList.remove("hidden");
+      return;
     }
+
+    setLoading(true);
+
+    axios
+      .post(
+        "https://aichatbot-326159028339.us-central1.run.app/user/otp/verify",
+        {
+          phone: digits,
+          code: enteredOtp,
+        }
+      )
+      .then((response) => {
+        if (response.data.token) {
+          const { token } = response.data;
+          Cookies.set("chatToken", token, { expires: 7 });
+          const redirectPath = localStorage.getItem("redirectPath") || "/chat";
+          localStorage.removeItem("redirectPath");
+          navigate(redirectPath);
+        } else {
+          toast.error("Expired");
+        }
+      })
+      .catch((error) => {
+        console.error("Error verifying OTP:", error);
+        toast.error(`OTP-ийн хугацаа дууссан. Та дахин код авах боломжтой.`);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   };
 
   return (
@@ -148,10 +176,10 @@ export default function PhoneLogin() {
                 {loading ? (
                   <>
                     <div className="animate-spin border-4 border-t-4 rounded-full border-gray-300 border-t-gray-800 w-5 h-5 inline-block mr-2"></div>
-                    Нэвтрэх...
+                    Уншиж байна ...
                   </>
                 ) : (
-                  "Нэвтрэх"
+                  "Баталгаажуулах код авах"
                 )}
               </button>
             </div>
