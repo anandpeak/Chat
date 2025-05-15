@@ -618,7 +618,7 @@ export default function Chat({ isSidebarOpen }) {
       </div>
 
       <div
-        className={`p-4 border flex-shrink-0 bg-[#fff] shadow-xl ${
+        className={`p-4 border flex-shrink-0 bg-[#fff] shadow-xl  ${
           isSidebarOpen ? "md:w-[80%]" : "md:w-[60%]"
         } w-[90%] rounded-3xl bg-none absolute bottom-4 left-1/2 transform -translate-x-1/2`}
       >
