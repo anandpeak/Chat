@@ -13,8 +13,7 @@ import NotFound from "./components/NotFound";
 import Cookies from "js-cookie";
 import { ConversationsProvider } from "./context/ConversationsContext";
 
-function App() {
-  
+function App() {  
   const isAuthenticated = !!Cookies.get("chatToken");
 
   return (
