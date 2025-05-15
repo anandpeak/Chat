@@ -14,6 +14,7 @@ import Cookies from "js-cookie";
 import { ConversationsProvider } from "./context/ConversationsContext";
 
 function App() {
+  
   const isAuthenticated = !!Cookies.get("chatToken");
 
   return (
