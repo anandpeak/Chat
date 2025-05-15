@@ -10,6 +10,25 @@ import "react-loading-skeleton/dist/skeleton.css";
 import { IoIosSend } from "react-icons/io";
 import { ConversationsContext } from "../context/ConversationsContext";
 
+async function getAudioDurationFromBlob(blob) {
+  const arrayBuffer = await blob.arrayBuffer();
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  try {
+    const decodedData = await audioContext.decodeAudioData(arrayBuffer);
+    return decodedData.duration;
+  } catch (error) {
+    console.error("Error decoding audio:", error);
+    return null;
+  }
+}
+
+function calculateDurationFallback(chunks) {
+  const totalBytes = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
+  const approximateBitrate = 4000;
+  return totalBytes / approximateBitrate;
+}
+
 const VoiceMessage = ({ file }) => {
   const audioRef = useRef(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -23,12 +42,6 @@ const VoiceMessage = ({ file }) => {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  useEffect(() => {
-    if (file?.duration) {
-      setDisplayDuration(formatDuration(file.duration));
-    }
-  }, [file]);
-
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -41,17 +54,36 @@ const VoiceMessage = ({ file }) => {
     setIsPlaying(!isPlaying);
   };
 
-  const handleLoadedMetadata = () => {
-    const audio = audioRef.current;
-    if (!audio) return;
+  useEffect(() => {
+    if (!file) return;
 
-    if (isFinite(audio.duration) && audio.duration > 0) {
-      setDuration(formatDuration(audio.duration));
-      setDisplayDuration(formatDuration(audio.duration));
-    } else if (file?.duration) {
-      setDisplayDuration(formatDuration(file.duration));
-    }
-  };
+    const fetchDuration = async () => {
+      try {
+        let blob;
+
+        if (typeof file === "string") {
+          const response = await fetch(file);
+          if (!response.ok)
+            throw new Error(`HTTP error! status: ${response.status}`);
+          blob = await response.blob();
+        } else if (file instanceof Blob) {
+          blob = file;
+        } else {
+          console.error("Unsupported file format");
+          return;
+        }
+
+        const durationFromBlob = await getAudioDurationFromBlob(blob);
+        const calculatedDuration =
+          durationFromBlob || calculateDurationFallback([blob]);
+        setDisplayDuration(formatDuration(calculatedDuration));
+      } catch (error) {
+        console.error("Error", error);
+      }
+    };
+
+    fetchDuration();
+  }, [file]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -70,7 +102,7 @@ const VoiceMessage = ({ file }) => {
   }, [isPlaying]);
 
   return (
-    <div className=" text-white flex items-center justify-between space-x-3 max-w-xs">
+    <div className="text-white flex items-center justify-between space-x-3 max-w-xs">
       <button
         onClick={togglePlay}
         className="p-2 bg-[#000] text-white rounded-full"
@@ -78,13 +110,13 @@ const VoiceMessage = ({ file }) => {
         {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} />}
       </button>
       <span className="text-sm no-underline">
-        {isPlaying ? duration : displayDuration}
+        {duration}
+        {/* / {displayDuration} */}
       </span>
 
       <audio
         ref={audioRef}
-        src={file?.url}
-        onLoadedMetadata={handleLoadedMetadata}
+        src={typeof file === "string" ? file : file?.url}
         onEnded={() => {
           setIsPlaying(false);
           setDuration(displayDuration);
@@ -154,6 +186,12 @@ export default function Chat({ isSidebarOpen }) {
     return () => clearInterval(timer);
   }, [isRecording]);
 
+  useEffect(() => {
+    if (voiceMsg && voiceMsg.url) {
+      sendMessage();
+    }
+  }, [voiceMsg]);
+
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60)
       .toString()
@@ -201,6 +239,13 @@ export default function Chat({ isSidebarOpen }) {
     }
   };
 
+  const createFileObject = async (blob) => {
+    return new Promise((resolve) => {
+      const file = new File([blob], "audio.mp3");
+      resolve(file);
+    });
+  };
+
   const stopRecordingAndSend = async () => {
     const recorder = mediaRecorderRef.current;
     if (!recorder) return;
@@ -212,36 +257,10 @@ export default function Chat({ isSidebarOpen }) {
 
     setIsRecording(false);
 
-    const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-    const formData = new FormData();
-    formData.append("audio", audioBlob);
-
-    const token = Cookies.get("chatToken");
+    const audioBlob = new Blob(audioChunks);
 
     try {
-      const response = await axios.post(
-        "https://aichatbot-326159028339.us-central1.run.app/chat/conversation/voice",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = response.data;
-
-      const audioFile = {
-        name: data.name || `audio-${Date.now()}.webm`,
-        type: "audio/webm",
-        url: data.url,
-        duration: data.duration || null,
-      };
-
-      console.log("audioFile", audioFile);
-      setVoiceMsg(audioFile);
-      await sendMessage();
+      await sendAudio(audioBlob);
     } catch (error) {
       console.error("Error sending voice message: ", error);
     }
@@ -249,25 +268,46 @@ export default function Chat({ isSidebarOpen }) {
     mediaRecorderRef.current = null;
   };
 
-  async function getAudioDurationFromBlob(blob) {
-    const arrayBuffer = await blob.arrayBuffer();
-    const audioContext = new (window.AudioContext ||
-      window.webkitAudioContext)();
+  const sendAudio = async (audioBlob) => {
+    const formData = new FormData();
+    const token = Cookies.get("chatToken");
+
+    formData.append("audio", audioBlob, "recording.mp3");
 
     try {
-      const decodedData = await audioContext.decodeAudioData(arrayBuffer);
-      return decodedData.duration;
-    } catch (error) {
-      console.error("Error decoding audio:", error);
-      return null;
-    }
-  }
+      const response = await fetch(
+        "https://aichatbot-326159028339.us-central1.run.app/chat/conversation/voice",
+        {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
-  function calculateDurationFallback(chunks) {
-    const totalBytes = chunks.reduce((acc, chunk) => acc + chunk.byteLength, 0);
-    const approximateBitrate = 4000;
-    return totalBytes / approximateBitrate;
-  }
+      const result = await response.json();
+
+      if (response.ok) {
+        setVoiceMsg({ data: result, url: result.audioUrl });
+        setHistory((prev) => {
+          const updatedTextResponse = [
+            ...prev.textReponse,
+            {
+              user: result.audioUrl,
+              voice: true,
+              chatbot: null,
+            },
+          ];
+          return { ...prev, textReponse: updatedTextResponse };
+        });
+        sendMessage();
+      }
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+    }
+  };
 
   const cancelRecording = () => {
     if (mediaRecorderRef.current) {
@@ -282,11 +322,8 @@ export default function Chat({ isSidebarOpen }) {
   };
 
   const sendMessage = async () => {
-    console.log("called");
-    console.log("voiceMsg = ", voiceMsg);
     const text = messageText.trim();
     if (!text && !voiceMsg) return;
-    console.log("worked");
     setLoadingChat(true);
 
     const textarea = textareaRef.current;
@@ -310,14 +347,6 @@ export default function Chat({ isSidebarOpen }) {
         },
         file: null,
       };
-
-      setHistory((prev) => {
-        const updatedTextResponse = [
-          ...prev.textReponse,
-          { user: voiceMsg.url, chatbot: null, voice: true },
-        ];
-        return { ...prev, textReponse: updatedTextResponse };
-      });
 
       try {
         const messageResponse = await axios.post(
@@ -417,7 +446,7 @@ export default function Chat({ isSidebarOpen }) {
           chatContainerRef.current.scrollHeight;
       }
     }
-  }, [history?.textReponse]);
+  }, [history?.textReponse, loadingChat]);
 
   return (
     <div className="w-full flex flex-col h-full  relative">
@@ -465,6 +494,9 @@ export default function Chat({ isSidebarOpen }) {
             ?.filter((msg) => msg.chatbot || msg.user)
             .map((msg, idx) => {
               const sender = msg.chatbot ? "them" : "me";
+              const isVoiceMessage = msg.user?.startsWith(
+                "https://storage.googleapis.com/oneplace-voice/voice-uploads/"
+              );
 
               return (
                 <div
@@ -473,12 +505,11 @@ export default function Chat({ isSidebarOpen }) {
                     sender === "me" ? "justify-end" : "justify-start"
                   } group`}
                 >
-                  {console.log(msg)}
                   {sender === "them" && (
                     <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff]">
                       {!history.avatar ? (
                         <img
-                          src={`/chatbot.jpeg`}
+                          src="/chatbot.jpeg"
                           alt={history.name}
                           className="w-full h-full object-cover rounded-full"
                         />
@@ -505,13 +536,15 @@ export default function Chat({ isSidebarOpen }) {
                         {msg.chatbot}
                       </p>
                     )}
-
-                    {msg.user && (
-                      <p className="whitespace-pre-wrap break-words">
-                        {msg.user}
-                      </p>
+                    {isVoiceMessage ? (
+                      <VoiceMessage file={msg.user} />
+                    ) : (
+                      msg.user && (
+                        <p className="whitespace-pre-wrap break-words">
+                          {msg.user}
+                        </p>
+                      )
                     )}
-                    {msg.voice && <VoiceMessage file={msg.user} />}
                     {msg.file && (
                       <div className="mt-1">
                         {msg.file.type.startsWith("image/") && (
@@ -564,7 +597,7 @@ export default function Chat({ isSidebarOpen }) {
             })
         )}
         {loadingChat && (
-          <div className={`flex items-end gap-3 justify-start pt-4`}>
+          <div className={`flex items-end gap-3 justify-start pt-4 mb-20`}>
             <div className="w-8 h-8 rounded-full relative border flex items-center justify-center bg-[#fff] shadow-xl">
               <img
                 src={`/chatbot.jpeg`}

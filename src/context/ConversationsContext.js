@@ -13,7 +13,6 @@ export const ConversationsProvider = ({ children }) => {
 
   const refreshConversations = useCallback(() => {
     const token = Cookies.get("chatToken");
-    console.log(token);
 
     axios
       .get(`https://aichatbot-326159028339.us-central1.run.app/chat/list`, {
