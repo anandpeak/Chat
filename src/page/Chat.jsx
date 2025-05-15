@@ -54,36 +54,36 @@ const VoiceMessage = ({ file }) => {
     setIsPlaying(!isPlaying);
   };
 
-  useEffect(() => {
-    if (!file) return;
+  // useEffect(() => {
+  //   if (!file) return;
 
-    const fetchDuration = async () => {
-      try {
-        let blob;
+  //   const fetchDuration = async () => {
+  //     try {
+  //       let blob;
 
-        if (typeof file === "string") {
-          const response = await fetch(file);
-          if (!response.ok)
-            throw new Error(`HTTP error! status: ${response.status}`);
-          blob = await response.blob();
-        } else if (file instanceof Blob) {
-          blob = file;
-        } else {
-          console.error("Unsupported file format");
-          return;
-        }
+  //       if (typeof file === "string") {
+  //         const response = await fetch(file);
+  //         if (!response.ok)
+  //           throw new Error(`HTTP error! status: ${response.status}`);
+  //         blob = await response.blob();
+  //       } else if (file instanceof Blob) {
+  //         blob = file;
+  //       } else {
+  //         console.error("Unsupported file format");
+  //         return;
+  //       }
 
-        const durationFromBlob = await getAudioDurationFromBlob(blob);
-        const calculatedDuration =
-          durationFromBlob || calculateDurationFallback([blob]);
-        setDisplayDuration(formatDuration(calculatedDuration));
-      } catch (error) {
-        console.error("Error", error);
-      }
-    };
+  //       const durationFromBlob = await getAudioDurationFromBlob(blob);
+  //       const calculatedDuration =
+  //         durationFromBlob || calculateDurationFallback([blob]);
+  //       setDisplayDuration(formatDuration(calculatedDuration));
+  //     } catch (error) {
+  //       console.error("Error", error);
+  //     }
+  //   };
 
-    fetchDuration();
-  }, [file]);
+  //   fetchDuration();
+  // }, [file]);
 
   useEffect(() => {
     const audio = audioRef.current;
