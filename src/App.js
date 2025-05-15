@@ -21,8 +21,6 @@ function App() {
       <ConversationsProvider>
         <Routes>
           <Route path="/login" element={<SignUp />} />
-
-          {/* Redirect based on authentication and pathname */}
           <Route
             path="/"
             element={
