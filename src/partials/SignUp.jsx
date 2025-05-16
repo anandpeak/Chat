@@ -34,17 +34,6 @@ export default function PhoneLogin() {
     return first;
   };
 
-  const handleOtpChange = (value, index) => {
-    if (!/^\d?$/.test(value)) return;
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
-    }
-  };
-
   const resendCode = () => {
     setCountdown(500);
     handleSendCode();
@@ -123,6 +112,37 @@ export default function PhoneLogin() {
       });
   };
 
+  const handleOtpChange = (value, index) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (e, index) => {
+    if (e.key === "Enter") {
+      handleVerifyOtp();
+      return;
+    }
+
+    if (e.key === "Backspace") {
+      const newOtp = [...otp];
+
+      if (!newOtp[index] && index > 0) {
+        newOtp[index - 1] = "";
+        setOtp(newOtp);
+        otpRefs.current[index - 1].focus();
+      } else {
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
+    }
+  };
+
   return (
     <div className="bg-gray-50 min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl overflow-hidden w-full max-w-md">
@@ -134,7 +154,6 @@ export default function PhoneLogin() {
             </div>
           </div>
         </div>
-
         <div className="p-6">
           {step === 1 && (
             <div className="fade-in">
@@ -215,6 +234,7 @@ export default function PhoneLogin() {
                     className="w-12 h-12 text-center border border-gray-300 rounded-lg shadow-sm text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={digit}
                     onChange={(e) => handleOtpChange(e.target.value, i)}
+                    onKeyDown={(e) => handleOtpKeyDown(e, i)}
                   />
                 ))}
               </div>
