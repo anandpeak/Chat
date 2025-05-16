@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent automatic download links */
 a[download][href^="blob:"] {
   display: none !important;
 }
+

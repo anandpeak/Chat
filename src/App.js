@@ -13,7 +13,7 @@ import NotFound from "./components/NotFound";
 import Cookies from "js-cookie";
 import { ConversationsProvider } from "./context/ConversationsContext";
 
-function App() {
+function App() {  
   const isAuthenticated = !!Cookies.get("chatToken");
 
   return (
@@ -21,8 +21,6 @@ function App() {
       <ConversationsProvider>
         <Routes>
           <Route path="/login" element={<SignUp />} />
-
-          {/* Redirect based on authentication and pathname */}
           <Route
             path="/"
             element={
