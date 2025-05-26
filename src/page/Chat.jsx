@@ -169,6 +169,10 @@ export default function Chat({ isSidebarOpen }) {
       .catch((err) => {
         console.log(err);
         setLoading(false);
+
+        if (err?.response?.status === 403) {
+          window.location.reload();
+        }
       });
   }, [cId, jId]);
 
