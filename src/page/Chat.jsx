@@ -170,8 +170,8 @@ export default function Chat({ isSidebarOpen }) {
         console.log(err);
         setLoading(false);
 
-        if (err?.response?.status === 403) {
-          window.location.reload();
+        if (err.message === "Network Error" && !err.response) {
+          window.location.reload(true);
         }
       });
   }, [cId, jId]);
