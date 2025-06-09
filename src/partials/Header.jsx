@@ -57,10 +57,11 @@ export const Header = ({
             </div>
           )}
         </div>
-        <div>
+        <div className="flex items-center gap-1">
           <p className="font-semibold max-w-[160px] md:max-w-[160px] truncate">
             {activeConversation?.companyName}
           </p>
+          <img className="w-4 h-4" src="/verified.png" alt="verified" />
           {/* <p className="text-sm">{activeConversation.status}</p> */}
         </div>
       </div>
