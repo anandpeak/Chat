@@ -9,6 +9,7 @@ import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import { IoIosSend } from "react-icons/io";
 import { ConversationsContext } from "../context/ConversationsContext";
+import { GiSoundWaves } from "react-icons/gi";
 
 async function getAudioDurationFromBlob(blob) {
   const arrayBuffer = await blob.arrayBuffer();
@@ -102,7 +103,7 @@ const VoiceMessage = ({ file }) => {
   }, [isPlaying]);
 
   return (
-    <div className="text-white flex items-center justify-between space-x-3 max-w-xs">
+    <div className="text-white flex items-center justify-between space-x-1 max-w-xs">
       <button
         onClick={togglePlay}
         className="p-2 bg-[#000] text-white rounded-full"
@@ -110,7 +111,9 @@ const VoiceMessage = ({ file }) => {
         {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} />}
       </button>
       <span className="text-sm no-underline">
-        {duration}
+        {/* {duration} */}
+        <GiSoundWaves className="text-4xl" />
+
         {/* / {displayDuration} */}
       </span>
 
