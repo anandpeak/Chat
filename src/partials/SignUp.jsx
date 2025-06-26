@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import Cookies from "js-cookie";
 
 export default function PhoneLogin() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(2);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPhoneError, setShowPhoneError] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(""));
@@ -229,7 +229,7 @@ export default function PhoneLogin() {
                   <input
                     key={i}
                     ref={(el) => (otpRefs.current[i] = el)}
-                    type="text"
+                    type="number"
                     maxLength="1"
                     className="w-12 h-12 text-center border border-gray-300 rounded-lg shadow-sm text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={digit}
