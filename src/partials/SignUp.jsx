@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 import Cookies from "js-cookie";
 
 export default function PhoneLogin() {
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(1);
   const [phoneNumber, setPhoneNumber] = useState("");
   const [showPhoneError, setShowPhoneError] = useState(false);
   const [otp, setOtp] = useState(Array(6).fill(""));
