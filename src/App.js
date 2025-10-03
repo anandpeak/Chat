@@ -56,7 +56,6 @@ function App() {
             }
           />
 
-          {/* Catch-all route for unmatched paths */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ConversationsProvider>
