@@ -17,7 +17,7 @@ export default function PhoneLogin() {
 
   // Subdomain detection and local toggle
   const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
-  const isUzbekistanSubdomain = window.location.hostname.startsWith("ai.oneplace.hr");
+  const isUzbekistanSubdomain = window.location.hostname.startsWith("uz.oneplace.hr");
   const [localUzbekMode, setLocalUzbekMode] = useState(false);
   const isUzbekistan = isUzbekistanSubdomain || (isLocalhost && localUzbekMode);
 
