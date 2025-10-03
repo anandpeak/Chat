@@ -614,11 +614,19 @@ export default function Chat({ isSidebarOpen }) {
             </div>
 
             <div
-              className={`flex-1 space-y-2 max-w-[70%] md:max-w-md px-4 py-2 rounded-3xl bg-white shadow-custom`}
+              className={`flex space-y-2 px-4 py-3 rounded-3xl bg-white shadow-custom`}
             >
-              <Skeleton width="80%" height={16} />
-              <Skeleton width="60%" height={16} />
-              <Skeleton width="40%" height={16} />
+              <div className="flex items-center space-x-1 mt-1">
+                {[0, 1, 2].map((dot) => (
+                  <span
+                    key={dot}
+                    className="w-2.5 h-2.5 bg-gray-500 rounded-full animate-dot-bounce-high"
+                    style={{
+                      animationDelay: `${dot * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         )}
