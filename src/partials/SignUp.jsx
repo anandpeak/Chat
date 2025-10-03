@@ -71,11 +71,15 @@ export default function PhoneLogin() {
   };
 
   const handleSendCode = () => {
-    const digits = phoneNumber.replace(/\D/g, "");
     const requiredLength = isUzbekistan ? 9 : 8;
 
-    if (digits.length !== requiredLength) {
+    console.log("Phone number (raw digits):", phoneNumber);
+    console.log("Length:", phoneNumber.length);
+    console.log("Required length:", requiredLength);
+
+    if (phoneNumber.length !== requiredLength) {
       setShowPhoneError(true);
+      console.log("Validation failed: wrong length");
       return;
     }
 
@@ -87,7 +91,7 @@ export default function PhoneLogin() {
         .post(
           "https://aichatbot-326159028339.us-central1.run.app/user/otp/send",
           {
-            phone: digits,
+            phone: phoneNumber,
             country: "UZ",
           }
         )
@@ -118,7 +122,7 @@ export default function PhoneLogin() {
         .post(
           "https://aichatbot-326159028339.us-central1.run.app/user/otp/send",
           {
-            phone: digits,
+            phone: phoneNumber,
             country: "MN",
           }
         )
@@ -143,7 +147,6 @@ export default function PhoneLogin() {
 
   const handleVerifyOtp = () => {
     const enteredOtp = otp.join("");
-    const digits = phoneNumber.replace(/\D/g, "");
 
     if (enteredOtp.length !== 6) {
       document.getElementById("otp-error").classList.remove("hidden");
@@ -156,7 +159,7 @@ export default function PhoneLogin() {
       .post(
         "https://aichatbot-326159028339.us-central1.run.app/user/otp/verify",
         {
-          phone: digits,
+          phone: phoneNumber,
           code: enteredOtp,
           country: isUzbekistan ? "UZ" : "MN",
         }
@@ -259,7 +262,11 @@ export default function PhoneLogin() {
                     type="tel"
                     className="flex-1 border-0 focus:ring-0 focus:outline-none px-3 py-1"
                     value={formatPhone(phoneNumber)}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    onChange={(e) => {
+                      const rawDigits = e.target.value.replace(/\D/g, "");
+                      setPhoneNumber(rawDigits);
+                      setShowPhoneError(false);
+                    }}
                     placeholder={isUzbekistan ? "90 123-45-67" : "1234-5678"}
                     disabled={loading}
                     onKeyDown={(e) => e.key === "Enter" && handleSendCode()}
